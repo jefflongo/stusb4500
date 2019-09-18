@@ -180,6 +180,9 @@ int stusb_negotiate(void) {
     }
 
     // Read source capabilities
+    // WARNING: This must happen very soon after the previous code block is
+    // executed. The source will send an accept message which partially
+    // overwrites the source capabilities message. Use i2c clock >= 300 kHz
     if (
       i2c_master_read(
         STUSB_ADDR, RX_DATA_OBJ, buffer, HEADER_NUM_DATA_OBJECTS(header) * 4) !=
