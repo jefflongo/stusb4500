@@ -20,9 +20,13 @@ FTP_CTRL_1: address 0x97
     [2:0] : FTP_CUST_OPCODE : Opcode
             000 : Read sector
             001 : Write Program Load register (PL) with data to be written to
-sector 0 or 1 010 : Write FTP_CTRL_1[7:3] to Sector Erase register (SER) 011 :
-Read PL 100 : Read SER 101 : Erase sectors masked by SER 110 : Program sector
-selected by FTP_CTRL_0[2:0] 111 : Soft program sectors masked by SER
+                  sector 0 or 1
+            010 : Write FTP_CTRL_1[7:3] to Sector Erase register (SER)
+            011 : Read PL
+            100 : Read SER
+            101 : Erase sectors masked by SER
+            110 : Program sector selected by FTP_CTRL_0[2:0]
+            111 : Soft program sectors masked by SER
 
 RW_BUFFER: address 0x53
     [7:0] : Buffer used for reading and writing data */
