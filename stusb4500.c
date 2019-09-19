@@ -190,6 +190,7 @@ int stusb_negotiate(void) {
         return STUSB_FAILURE;
 
     // Find and negotiate the optimal PDO, if any
+    // NOTE: vbus will be momentarily lost
     return negotiate_optimal_pdo(
       (uint32_t*)buffer, HEADER_NUM_DATA_OBJECTS(header));
 }
