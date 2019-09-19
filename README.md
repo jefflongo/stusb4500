@@ -16,7 +16,7 @@ The STUSB4500 supports a 5V fixed power profile, and two customizeable power pro
 | REQ_SRC_CURRENT     | Accept as much current as src provides | Yes           |
 | POWER_ONLY_ABOVE_5V | Only output if negotiation above 5V    | No            |
 
-To program the NVM, include `nvm_flash.h` and run `nvm_flash()`. It is recommended to run `nvm_verify()` after to check if the flash was successful (returns 0 on success). 
+To program the NVM, include `stusb4500_nvm.h` and run `nvm_flash()`. It is recommended to run `nvm_verify()` after to check if the flash was successful (returns 0 on success). 
 
 ### Dynamic Power Profiles
 To take advantage of dynamic power profiles, include `stusb4500.h`. `stusb4500.h` has three adjustable parameters that the user can adjust: minimum current, minimum voltage, and maximum voltage. The optimal negotiated profile must satisfy these parameters. Simply call `stusb_negotiate()` to read the PD sources capabilities and update the high priority power profile. This is recommended to be done on charger attachment interrupt (note that vbus is momentarily loss on renegotiation), but can also be done occasionally on a timer if this capability is not available.
