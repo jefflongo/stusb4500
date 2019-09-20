@@ -1,3 +1,9 @@
+/*
+ * File:     stusb4500.h
+ * Author:   jefflongo
+ * Comments: STUSB4500 driver
+ */
+
 #ifndef STUSB4500_H
 #define STUSB4500_H
 

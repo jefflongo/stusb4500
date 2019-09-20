@@ -1,3 +1,9 @@
+/*
+ * File:     stusb4500_nvm_config.h
+ * Author:   jefflongo
+ * Comments: User-adjustable parameters for the STUSB4500 non-volatile memory
+ */
+
 #ifndef STUSB4500_NVM_CONFIG_H
 #define STUSB4500_NVM_CONFIG_H
 

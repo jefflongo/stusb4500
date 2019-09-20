@@ -1,3 +1,9 @@
+/*
+ * File:     stusb4500_nvm.h
+ * Author:   jefflongo
+ * Comments: Programs the STUSB4500 non-volatile memory
+ */
+
 #ifndef STUSB4500_NVM_H
 #define STUSB4500_NVM_H
 
