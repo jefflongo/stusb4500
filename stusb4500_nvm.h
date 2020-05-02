@@ -1,16 +1,8 @@
-/*
- * File:     stusb4500_nvm.h
- * Author:   jefflongo
- * Comments: Programs the STUSB4500 non-volatile memory
- */
+#pragma once
 
-#ifndef STUSB4500_NVM_H
-#define STUSB4500_NVM_H
-
+#include <stdbool.h>
 #include <stdint.h>
 
-int nvm_flash(void);
-int nvm_read(uint8_t* sectors_out);
-int nvm_verify(void);
-
-#endif // STUSB4500_NVM_H
+bool nvm_flash(void);
+bool nvm_read(uint8_t* sectors_out);
+bool nvm_verify(void);
