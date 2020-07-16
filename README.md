@@ -1,28 +1,24 @@
 # STUSB4500
 STUSB4500 is a USB-C PD controller which supports a 5V fixed power profile, and two customizeable power profiles. This library allows for flashing the non-volatile memory of the STUSB4500 to change the default power profiles on boot as well as the capability to program the high priority power profile with the optimal power profile that the currently plugged in PD charger can supply on the fly. Optimal is defined as the highest wattage profile that satisfies a user-defined set of constraints. From testing, an i2c clock >= 300 kHz is required to keep up with PD message speed. This code assumes a little endian architecture. 
 
-This library can be ported to a custom platform with minimal modification to `stusb4500.h`. Namely:
-- Providing an platform-specific implementation for `STUSB4500_GET_MS()` and `STUSB4500_DELAY(ms)`
-- Setting your desired PDO parameters - a minimum desired current/voltage, and a maximum voltage
-
-An i2c implementation is also required. The platform-independent wrapper library used can be found an adapted to a specific platform [here](https://github.com/jefflongo/libi2c).
-
-### NVM Flashing
-`stusb4500_nvm_config.h` contains the configuration to be flashed to the STUSB4500 NVM. The following parameters can be adjusted:
-
-| Parameter           | Description                            | Default Value |
-| ------------------- | -------------------------------------- | ------------- |
-| I_SNK_PDO1          | PDO1 current (mA)                      | 1.5A          |
-| V_SNK_PDO2          | PDO2 voltage (mV)                      | 9V            |
-| I_SNK_PDO2          | PDO2 current (mA)                      | 3A            |
-| V_SNK_PDO3          | PDO3 voltage (mV)                      | 15V           |
-| I_SNK_PDO3          | PDO3 current (mA)                      | 2A            |
-| I_SNK_PDO_FLEX      | Global PDO current if PDO = 0          | 2A            |
-| SNK_PDO_NUM         | Number of valid PDOs (1, 2, or 3)      | 3             |
-| REQ_SRC_CURRENT     | Accept as much current as src provides | Yes           |
-| POWER_ONLY_ABOVE_5V | Only output if negotiation above 5V    | No            |
-
-To program the NVM, include `stusb4500_nvm.h` and run `nvm_flash()`. It is recommended to run `nvm_verify()` after to check if the flash was successful (returns 0 on success). 
+This library can easily be ported to a custom platform. The only requirements are an i2c implementation (add an implementation to the platform-independent wrapper library [here](https://github.com/jefflongo/libi2c)), and a function to get the current tick for timing.
 
 ### Dynamic Power Profiles
-To take advantage of dynamic power profiles, include `stusb4500.h`. `stusb4500.h` has three adjustable parameters that the user can adjust: minimum current, minimum voltage, and maximum voltage. The optimal negotiated profile must satisfy these parameters. Simply call `stusb_negotiate()` to read the PD sources capabilities and update the high priority power profile. This is recommended to be done on charger attachment interrupt (note that vbus is momentarily loss on renegotiation), but can also be done by a software hard reset.
+To take advantage of dynamic power profiles, include `stusb4500.h`. `stusb4500_config_t` has three adjustable parameters: minimum current, minimum voltage, and maximum voltage. The optimal negotiated profile must satisfy these parameters. Simply call `stusb_negotiate()` to read the PD sources capabilities and update the high priority power profile. This is recommended to be done on charger attachment interrupt (note that vbus is momentarily loss on renegotiation), but can also be done by a software hard reset.
+
+### NVM Flashing
+Currently, the following parameters can be adjusted via the `stusb4500_config_t` struct.
+
+| Parameter           | Description                            |
+| ------------------- | -------------------------------------- |
+| I_SNK_PDO1          | PDO1 current (mA)                      |
+| V_SNK_PDO2          | PDO2 voltage (mV)                      |
+| I_SNK_PDO2          | PDO2 current (mA)                      |
+| V_SNK_PDO3          | PDO3 voltage (mV)                      |
+| I_SNK_PDO3          | PDO3 current (mA)                      |
+| I_SNK_PDO_FLEX      | Global PDO current if PDO = 0          |
+| SNK_PDO_NUM         | Number of valid PDOs (1, 2, or 3)      |
+| REQ_SRC_CURRENT     | Accept as much current as src provides |
+| POWER_ONLY_ABOVE_5V | Only output if negotiation above 5V    |
+
+To program the NVM, include `stusb4500_nvm.h` and run `stusb4500_nvm_flash()` with your config. `stusb4500_nvm_flash()` returns true after writing and validating the flash.
