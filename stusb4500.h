@@ -1,18 +1,21 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
-// Define these platform-specific functions
-#include "sys/sys.h"
-#define STUSB4500_GET_MS() SYS_GET_MS()
-#define STUSB4500_DELAY_MS(ms) SYS_DELAY_MS(ms)
-
-// Enable logging via printf
 #define STUSB4500_ENABLE_PRINTF
 
-// User adjustable parameters
-#define PDO_CURRENT_MIN 1500  // mA, 25mA increments
-#define PDO_VOLTAGE_MIN 5000  // mV, 50mV increments
-#define PDO_VOLTAGE_MAX 12000 // mV, 50mV increments
+typedef uint16_t stusb4500_current_t;
+typedef uint16_t stusb4500_voltage_t;
+typedef uint32_t stusb4500_power_t;
+typedef uint32_t stusb4500_pdo_t;
+typedef uint32_t (*stusb4500_get_ms_func_t)(void);
 
-bool stusb_negotiate(bool on_interrupt);
+typedef struct {
+    stusb4500_current_t min_current_ma;
+    stusb4500_voltage_t min_voltage_mv;
+    stusb4500_voltage_t max_voltage_mv;
+    stusb4500_get_ms_func_t get_ms;
+} stusb4500_config_t;
+
+__attribute__((nonnull(1))) bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt);

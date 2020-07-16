@@ -1,7 +1,12 @@
 #include "stusb4500_nvm.h"
 
 #include "i2c.h"
-#include "stusb4500_nvm_config.h"
+
+#include <assert.h>
+#include <string.h>
+
+// I2C device ID
+#define STUSB_ADDR 0x28
 
 /* NVM Registers
 FTP_CUST_PASSWORD REG: address 0x95
@@ -60,34 +65,62 @@ RW_BUFFER: address 0x53
 #define SECTOR3 0x08
 #define SECTOR4 0x10
 
-// I2C device ID
-#define STUSB_ADDR 0x28
+// Register masks
+#define I_SNK_PDO1_POS 4
+#define I_SNK_PDO1_MSK (0x0F << I_SNK_PDO1_POS)
+#define I_SNK_PDO1_SECTOR 3
+#define I_SNK_PDO1_OFFSET 2
+
+#define I_SNK_PDO2_POS 0
+#define I_SNK_PDO2_MSK (0x0F << I_SNK_PDO2_POS)
+#define I_SNK_PDO2_SECTOR 3
+#define I_SNK_PDO2_OFFSET 4
+
+#define I_SNK_PDO3_POS 4
+#define I_SNK_PDO3_MSK (0x0F << I_SNK_PDO3_POS)
+#define I_SNK_PDO3_SECTOR 3
+#define I_SNK_PDO3_OFFSET 5
+
+#define I_SNK_PDO_FLEX_POS 2
+#define I_SNK_PDO_FLEX_MSK (0x03FF << I_SNK_PDO_FLEX_POS)
+#define I_SNK_PDO_FLEX_SECTOR 4
+#define I_SNK_PDO_FLEX_OFFSET 3
+
+#define V_SNK_PDO2_POS 6
+#define V_SNK_PDO2_MSK (0x01FF << V_SNK_PDO2_POS)
+#define V_SNK_PDO2_SECTOR 4
+#define V_SNK_PDO2_OFFSET 0
+
+#define V_SNK_PDO3_POS 0
+#define V_SNK_PDO3_MSK (0x01FF << V_SNK_PDO3_POS)
+#define V_SNK_PDO3_SECTOR 4
+#define V_SNK_PDO3_OFFSET 2
+
+#define SNK_PDO_NUMB_POS 1
+#define SNK_PDO_NUMB_MSK (0x03 << SNK_PDO_NUMB_POS)
+#define SNK_PDO_NUMB_SECTOR 3
+#define SNK_PDO_NUMB_OFFSET 2
+
+#define REQ_SRC_CURRENT_POS 4
+#define REQ_SRC_CURRENT_MSK (1u << REQ_SRC_CURRENT_POS)
+#define REQ_SRC_CURRENT_SECTOR 4
+#define REQ_SRC_CURRENT_OFFSET 6
+
+#define POWER_ONLY_ABOVE_5V_POS 2
+#define POWER_ONLY_ABOVE_5V_MSK (1u << POWER_ONLY_ABOVE_5V_POS)
+#define POWER_ONLY_ABOVE_5V_SECTOR 4
+#define POWER_ONLY_ABOVE_5V_OFFSET 6
 
 // 5 sectors, 8 bytes each
-#define NVM_SIZE 40
+#define NUM_SECTORS 5
+#define SECTOR_SIZE 8
+#define NVM_SIZE (NUM_SECTORS * SECTOR_SIZE)
 
-// Data to be written to sectors
-static const uint8_t nvm_config[5][8] = {
-    { 0x00, 0x00, 0xB0, 0xAA, 0x00, 0x45, 0x00, 0x00 }, // Sector 0
-    { 0x10, 0x40, 0x9C, 0x1C, 0xFF, 0x01, 0x3C, 0xDF }, // Sector 1
-    { 0x02, 0x40, 0x0F, 0x00, 0x32, 0x00, 0xFC, 0xF1 }, // Sector 2
-    { 0x00,                                             // Sector 3
-      0x19,
-      (uint8_t)(((I_SNK_PDO1 & 0x0F) << 4) | ((SNK_PDO_NUMB & 0x03) << 1)),
-      0xAF,
-      (uint8_t)((I_SNK_PDO2 & 0x0F) | 0xF0),
-      (uint8_t)(((I_SNK_PDO3 & 0x0F) << 4) | 0x05),
-      0x5F,
-      0x00 },
-    { (uint8_t)((V_SNK_PDO2 & 0x03) << 2), // Sector 4
-      (uint8_t)((V_SNK_PDO2 >> 2) & 0xFF),
-      (uint8_t)(V_SNK_PDO3 & 0xFF),
-      (uint8_t)(((I_SNK_PDO_FLEX & 0x3F) << 2) | ((V_SNK_PDO3 >> 8) & 0x03)),
-      (uint8_t)(((I_SNK_PDO_FLEX >> 6) & 0x0F) | 0x40),
-      0x00,
-      (uint8_t)(((REQ_SRC_CURRENT & 0x01) << 4) | ((POWER_ONLY_ABOVE_5V & 0x01) << 2) | 0x40),
-      0xFB },
-};
+#define PDO_VOLTAGE(mv) ((mv) / 50)
+#define PDO_CURRENT(ma) (((ma)-250) / 250)
+#define PDO_CURRENT_FLEX(ma) ((ma) / 10)
+
+#define MODIFY_REG(reg, data, mask) reg = (((reg) & ~(mask)) | ((data) & (mask)))
 
 static bool enter_write_mode(void) {
     uint8_t buffer;
@@ -264,49 +297,89 @@ static bool exit_rw_mode(void) {
     return true;
 }
 
-bool nvm_flash(void) {
-    if (!enter_write_mode()) return false;
-    if (!write_sector(0, nvm_config[0])) return false;
-    if (!write_sector(1, nvm_config[1])) return false;
-    if (!write_sector(2, nvm_config[2])) return false;
-    if (!write_sector(3, nvm_config[3])) return false;
-    if (!write_sector(4, nvm_config[4])) return false;
-    if (!exit_rw_mode()) return false;
+static void apply_config(uint8_t* nvm, const stusb4500_nvm_config_t* config) {
+    uint8_t(*p_nvm)[SECTOR_SIZE] = (uint8_t(*)[SECTOR_SIZE])nvm;
 
-    return true;
+    MODIFY_REG(
+      p_nvm[I_SNK_PDO1_SECTOR][I_SNK_PDO1_OFFSET],
+      (PDO_CURRENT(config->pdo1_current_ma) << I_SNK_PDO1_POS) & I_SNK_PDO1_MSK,
+      I_SNK_PDO1_MSK);
+
+    MODIFY_REG(
+      p_nvm[I_SNK_PDO2_SECTOR][I_SNK_PDO2_OFFSET],
+      (PDO_CURRENT(config->pdo2_current_ma) << I_SNK_PDO2_POS) & I_SNK_PDO2_MSK,
+      I_SNK_PDO2_MSK);
+
+    MODIFY_REG(
+      p_nvm[I_SNK_PDO3_SECTOR][I_SNK_PDO3_OFFSET],
+      (PDO_CURRENT(config->pdo3_current_ma) << I_SNK_PDO3_POS) & I_SNK_PDO3_MSK,
+      I_SNK_PDO3_MSK);
+
+    MODIFY_REG(
+      *((uint16_t*)&p_nvm[I_SNK_PDO_FLEX_SECTOR][I_SNK_PDO_FLEX_OFFSET]),
+      (PDO_CURRENT_FLEX(config->pdo_current_fallback) << I_SNK_PDO_FLEX_POS) & I_SNK_PDO_FLEX_MSK,
+      I_SNK_PDO_FLEX_MSK);
+
+    MODIFY_REG(
+      *((uint16_t*)&p_nvm[V_SNK_PDO2_SECTOR][V_SNK_PDO2_OFFSET]),
+      (PDO_VOLTAGE(config->pdo2_voltage_mv) << V_SNK_PDO2_POS) & V_SNK_PDO2_MSK,
+      V_SNK_PDO2_MSK);
+
+    MODIFY_REG(
+      *((uint16_t*)&p_nvm[V_SNK_PDO3_SECTOR][V_SNK_PDO3_OFFSET]),
+      (PDO_VOLTAGE(config->pdo3_voltage_mv) << V_SNK_PDO3_POS) & V_SNK_PDO3_MSK,
+      V_SNK_PDO3_MSK);
+
+    MODIFY_REG(
+      p_nvm[SNK_PDO_NUMB_SECTOR][SNK_PDO_NUMB_OFFSET],
+      (config->num_valid_pdos << SNK_PDO_NUMB_POS) & SNK_PDO_NUMB_MSK,
+      SNK_PDO_NUMB_MSK);
+
+    MODIFY_REG(
+      p_nvm[REQ_SRC_CURRENT_SECTOR][REQ_SRC_CURRENT_OFFSET],
+      (config->use_src_current << REQ_SRC_CURRENT_POS) & REQ_SRC_CURRENT_MSK,
+      REQ_SRC_CURRENT_MSK);
+
+    MODIFY_REG(
+      p_nvm[POWER_ONLY_ABOVE_5V_SECTOR][POWER_ONLY_ABOVE_5V_OFFSET],
+      (config->only_above_5v << POWER_ONLY_ABOVE_5V_POS) & POWER_ONLY_ABOVE_5V_MSK,
+      POWER_ONLY_ABOVE_5V_MSK);
 }
 
-bool nvm_read(uint8_t* sectors_out) {
-    if (!sectors_out) return false;
-
-    uint8_t sectors[5][8];
-    uint8_t* p_sectors = (uint8_t*)sectors;
-
+bool stusb4500_nvm_read(uint8_t* nvm) {
     if (!enter_read_mode()) return false;
-    if (!read_sector(0, sectors[0])) return false;
-    if (!read_sector(1, sectors[1])) return false;
-    if (!read_sector(2, sectors[2])) return false;
-    if (!read_sector(3, sectors[3])) return false;
-    if (!read_sector(4, sectors[4])) return false;
-    if (!exit_rw_mode()) return false;
 
-    for (int i = 0; i < NVM_SIZE; i++) {
-        sectors_out[i] = p_sectors[i];
+    uint8_t* p_nvm = nvm;
+    for (uint8_t sector = 0; sector < NUM_SECTORS; sector++) {
+        if (!read_sector(sector, p_nvm)) return false;
+        p_nvm += SECTOR_SIZE;
     }
+
+    if (!exit_rw_mode()) return false;
 
     return true;
 }
 
-bool nvm_verify(void) {
-    uint8_t sectors[5][8];
-    uint8_t* p_sectors = (uint8_t*)sectors;
-    const uint8_t* p_config = (const uint8_t*)nvm_config;
+bool stusb4500_nvm_flash(const stusb4500_nvm_config_t* config) {
+    uint8_t nvm[NUM_SECTORS][SECTOR_SIZE];
+    uint8_t nvm_modified[NUM_SECTORS][SECTOR_SIZE];
 
-    if (!nvm_read(p_sectors)) return false;
+    if (!stusb4500_nvm_read((uint8_t*)nvm)) return false;
 
-    for (int i = 0; i < NVM_SIZE; i++) {
-        if (p_sectors[i] != p_config[i]) return false;
+    memcpy(nvm_modified, nvm, NVM_SIZE);
+    apply_config((uint8_t*)nvm_modified, config);
+
+    if (!enter_write_mode()) return false;
+
+    uint8_t* p_nvm = (uint8_t*)nvm_modified;
+    for (uint8_t sector = 0; sector < NUM_SECTORS; sector++) {
+        if (!write_sector(sector, p_nvm)) return false;
+        p_nvm += SECTOR_SIZE;
     }
 
-    return true;
+    if (!exit_rw_mode()) return false;
+
+    if (!stusb4500_nvm_read((uint8_t*)nvm)) return false;
+
+    return (memcmp(nvm, nvm_modified, NVM_SIZE) == 0);
 }
