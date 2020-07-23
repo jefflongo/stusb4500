@@ -7,8 +7,6 @@
 
 typedef uint16_t stusb4500_current_t;
 typedef uint16_t stusb4500_voltage_t;
-typedef uint32_t stusb4500_power_t;
-typedef uint32_t stusb4500_pdo_t;
 typedef uint32_t (*stusb4500_get_ms_func_t)(void);
 
 typedef struct {
