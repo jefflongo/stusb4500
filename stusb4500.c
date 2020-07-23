@@ -37,7 +37,6 @@
 
 // PD protocol commands, see USB PD spec Table 6-3
 #define PD_CMD 0x26
-#define PD_GET_SRC_CAP 0x0007
 #define PD_SOFT_RESET 0x000D
 
 // See USB PD spec Table 6-1
@@ -73,44 +72,21 @@
     ((((pdo)&PDO_VOLTAGE_MSK) >> PDO_VOLTAGE_POS) * PDO_VOLTAGE_RESOLUTION)
 #define TO_PDO_VOLTAGE(mv) ((((mv) / PDO_VOLTAGE_RESOLUTION) << PDO_VOLTAGE_POS) & PDO_VOLTAGE_MSK)
 
-#define RESET_DELAY_MS 27
-#define PLUG_TIMEOUT_MS 3000
-#define RETRIEVE_TIMEOUT_MS 500
+#define PDO_REQ_DELAY_MS 150
+#define SRC_CAP_TIMEOUT_MS 500
 
-// TODO: This doesn't work, STUSB4500 likely doesn't support this, need to verify
-__attribute__((unused)) static bool send_pd_message(const uint16_t msg) {
+// PD_SOFT_RESET seems to be the only message the STUSB4500 supports
+static bool send_pd_message(const uint16_t msg) {
     return (
       i2c_master_write_u16(STUSB_ADDR, TX_HEADER, msg) &&
       i2c_master_write_u8(STUSB_ADDR, CMD_CTRL, PD_CMD));
 }
 
-static bool is_present(stusb4500_config_t* config) {
-    uint32_t time = config->get_ms();
+static bool is_present(void) {
     uint8_t res;
-    do {
-        if (!i2c_master_read_u8(STUSB_ADDR, WHO_AM_I, &res)) return false;
-        if (config->get_ms() - time > RETRIEVE_TIMEOUT_MS) return false;
-    } while (res != STUSB4500_ID && res != STUSB4500B_ID);
+    if (!i2c_master_read_u8(STUSB_ADDR, WHO_AM_I, &res)) return false;
 
-    return true;
-}
-
-static bool reset(stusb4500_config_t* config) {
-    // Enable software reset
-    if (!i2c_master_write_u8(STUSB_ADDR, RESET_CTRL, SW_RESET_ON)) return false;
-
-    // Wait for VBUS to discharge
-    uint32_t time = config->get_ms();
-    while ((uint32_t)(config->get_ms() - time) < RESET_DELAY_MS)
-        ;
-
-    // Verify reset success
-    if (!is_present(config)) return false;
-
-    // Disable software reset
-    if (!i2c_master_write_u8(STUSB_ADDR, RESET_CTRL, SW_RESET_OFF)) return false;
-
-    return true;
+    return (res == STUSB4500_ID || res == STUSB4500B_ID);
 }
 
 static bool
@@ -129,9 +105,9 @@ static bool
   load_optimal_pdo(stusb4500_config_t* config, stusb4500_pdo_t* src_pdos, uint8_t num_pdos) {
     bool found = false;
 
-    stusb4500_current_t opt_pdo_current = 0;
-    stusb4500_voltage_t opt_pdo_voltage = 0;
-    stusb4500_power_t opt_pdo_power = 0;
+    stusb4500_current_t opt_pdo_current = 1000;
+    stusb4500_voltage_t opt_pdo_voltage = 5000;
+    stusb4500_power_t opt_pdo_power = opt_pdo_voltage * opt_pdo_current / 1000;
 
     // Search for the optimal PDO, if any
     for (int i = 0; i < num_pdos; i++) {
@@ -185,7 +161,7 @@ static bool
           (int)(opt_pdo_power / 1000),
           (int)(opt_pdo_power % 1000));
     } else {
-        printf("No suitable PDO found\r\n\r\n");
+        printf("No suitable PDO found, negotiating 5V\r\n\r\n");
     }
 #endif // STUSB4500_ENABLE_PRINTF
 
@@ -199,27 +175,23 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
     assert(config->min_voltage_mv >= 5000);
     assert(config->get_ms);
 
-    // Sanity check to see if STUSB4500 is there
-    if (!is_present(config)) return false;
-
-    // Force transmission of source capabilities if not responding to an ATTACH interrupt
-    if (!on_interrupt && !reset(config)) return false;
-
     uint8_t buffer[MAX_SRC_PDOS * sizeof(stusb4500_pdo_t)];
     uint16_t header;
-    uint32_t time = config->get_ms();
 
-    // Provide a buffer for cable attachment
-    do {
-        if (!i2c_master_read_u8(STUSB_ADDR, PORT_STATUS, buffer)) return false;
-        if (config->get_ms() - time > PLUG_TIMEOUT_MS) return false;
-    } while (!(buffer[0] & ATTACH));
+    // Sanity check to see if STUSB4500 is there
+    if (!is_present()) return false;
 
-    time = config->get_ms();
+    // Check that cable is attached
+    if (!i2c_master_read_u8(STUSB_ADDR, PORT_STATUS, buffer) || !(buffer[0] & ATTACH)) return false;
+
+    // Force transmission of source capabilities if not responding to an ATTACH interrupt
+    if (!on_interrupt && !send_pd_message(PD_SOFT_RESET)) return false;
+
+    uint32_t now = config->get_ms();
 
     while (1) {
         // Check for timeout
-        if (config->get_ms() - time > RETRIEVE_TIMEOUT_MS) return false;
+        if (config->get_ms() - now > SRC_CAP_TIMEOUT_MS) return false;
 
         // Read the port status to look for a source capabilities message
         if (!i2c_master_read_u8(STUSB_ADDR, PRT_STATUS, buffer)) return false;
@@ -234,7 +206,7 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
         if (!HEADER_NUM_DATA_OBJECTS(header) || HEADER_MESSAGE_TYPE(header) != SRC_CAPABILITIES_MSG)
             continue;
 
-        // Read number of rec   eived bytes
+        // Read number of received bytes
         if (!i2c_master_read_u8(STUSB_ADDR, RX_BYTE_CNT, buffer)) return false;
 
         // Check for missing data
@@ -254,11 +226,15 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
           HEADER_NUM_DATA_OBJECTS(header) * sizeof(stusb4500_pdo_t)))
         return false;
 
+    // A delay is required between the initial handshake and a PDO update
+    now = config->get_ms();
+    while (config->get_ms() - now < PDO_REQ_DELAY_MS)
+        ;
+
     // Find and load the optimal PDO, if any
     if (!load_optimal_pdo(config, (stusb4500_pdo_t*)buffer, HEADER_NUM_DATA_OBJECTS(header)))
         return false;
 
     // Force a renegotiation
-    // NOTE: vbus will be momentarily lost
-    return reset(config);
+    return send_pd_message(PD_SOFT_RESET);
 }
