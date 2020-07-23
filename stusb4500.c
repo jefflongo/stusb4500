@@ -2,8 +2,6 @@
 
 #include "i2c.h"
 
-#include <assert.h>
-
 #ifdef STUSB4500_ENABLE_PRINTF
 #include <stdio.h>
 #endif // STUSB4500_ENABLE_PRINTF
@@ -173,11 +171,9 @@ static bool
 }
 
 bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
-    assert(config->min_voltage_mv >= 5000);
-    assert(config->get_ms);
-
     uint8_t buffer[MAX_SRC_PDOS * sizeof(stusb4500_pdo_t)];
     uint16_t header;
+    uint32_t start = 0;
 
     // Sanity check to see if STUSB4500 is there
     if (!is_present()) return false;
@@ -188,11 +184,13 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
     // Force transmission of source capabilities if not responding to an ATTACH interrupt
     if (!on_interrupt && !send_pd_message(PD_SOFT_RESET)) return false;
 
-    uint32_t now = config->get_ms();
+    if (config->get_ms) {
+        start = config->get_ms();
+    }
 
     while (1) {
         // Check for timeout
-        if (config->get_ms() - now > SRC_CAP_TIMEOUT_MS) return false;
+        if (config->get_ms && (config->get_ms() - start > SRC_CAP_TIMEOUT_MS)) return false;
 
         // Read the port status to look for a source capabilities message
         if (!i2c_master_read_u8(STUSB_ADDR, PRT_STATUS, buffer)) return false;
