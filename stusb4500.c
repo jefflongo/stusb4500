@@ -16,6 +16,7 @@
 #define PRT_STATUS 0x16
 #define CMD_CTRL 0x1A
 #define RESET_CTRL 0x23
+#define PE_FSM 0x29
 #define WHO_AM_I 0x2F
 #define RX_BYTE_CNT 0x30
 #define RX_HEADER 0x31
@@ -31,6 +32,7 @@
 #define ATTACH 0x01
 #define PRT_MESSAGE_RECEIVED 0x04
 #define SRC_CAPABILITIES_MSG 0x01
+#define PE_SNK_READY 0x18
 
 // Maximum number of source power profiles
 #define MAX_SRC_PDOS 10
@@ -72,7 +74,6 @@
     ((((pdo)&PDO_VOLTAGE_MSK) >> PDO_VOLTAGE_POS) * PDO_VOLTAGE_RESOLUTION)
 #define TO_PDO_VOLTAGE(mv) ((((mv) / PDO_VOLTAGE_RESOLUTION) << PDO_VOLTAGE_POS) & PDO_VOLTAGE_MSK)
 
-#define PDO_REQ_DELAY_MS 150
 #define SRC_CAP_TIMEOUT_MS 500
 
 // PD_SOFT_RESET seems to be the only message the STUSB4500 supports
@@ -105,8 +106,8 @@ static bool
   load_optimal_pdo(stusb4500_config_t* config, stusb4500_pdo_t* src_pdos, uint8_t num_pdos) {
     bool found = false;
 
-    stusb4500_current_t opt_pdo_current = 1000;
-    stusb4500_voltage_t opt_pdo_voltage = 5000;
+    stusb4500_current_t opt_pdo_current = config->min_current_ma;
+    stusb4500_voltage_t opt_pdo_voltage = config->min_voltage_mv;
     stusb4500_power_t opt_pdo_power = opt_pdo_voltage * opt_pdo_current / 1000;
 
     // Search for the optimal PDO, if any
@@ -226,10 +227,11 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
           HEADER_NUM_DATA_OBJECTS(header) * sizeof(stusb4500_pdo_t)))
         return false;
 
-    // A delay is required between the initial handshake and a PDO update
-    now = config->get_ms();
-    while (config->get_ms() - now < PDO_REQ_DELAY_MS)
-        ;
+    // Wait for idle state before loading new PDO
+    uint8_t pd_state;
+    do {
+        if (!i2c_master_read_u8(STUSB_ADDR, PE_FSM, &pd_state)) return false;
+    } while (pd_state != PE_SNK_READY);
 
     // Find and load the optimal PDO, if any
     if (!load_optimal_pdo(config, (stusb4500_pdo_t*)buffer, HEADER_NUM_DATA_OBJECTS(header)))

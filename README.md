@@ -4,7 +4,7 @@ STUSB4500 is a USB-C PD controller which supports a 5V fixed power profile, and 
 This library can easily be ported to a custom platform. The only requirements are an i2c implementation (add an implementation to the platform-independent wrapper library [here](https://github.com/jefflongo/libi2c)), and a function to get the current tick for timing.
 
 ### Dynamic Power Profiles
-To take advantage of dynamic power profiles, include `stusb4500.h`. `stusb4500_config_t` has three adjustable parameters: minimum current, minimum voltage, and maximum voltage. The optimal negotiated profile must satisfy these parameters. Simply call `stusb_negotiate()` to read the PD sources capabilities and update the high priority power profile. This is recommended to be done on charger attachment interrupt (note that vbus is momentarily loss on renegotiation), but can also be done by a software hard reset.
+To take advantage of dynamic power profiles, include `stusb4500.h`. `stusb4500_config_t` has three adjustable parameters: minimum current, minimum voltage, and maximum voltage. The optimal negotiated profile must satisfy these parameters. Simply call `stusb_negotiate()` to read the PD sources capabilities and update the high priority power profile. This is recommended to be done on charger attachment interrupt, but can also be done be done manually using a PD soft reset.
 
 ### NVM Flashing
 Currently, the following parameters can be adjusted via the `stusb4500_config_t` struct.
