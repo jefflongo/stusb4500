@@ -180,8 +180,11 @@ static bool
           (int)(opt_pdo_power / 1000),
           (int)(opt_pdo_power % 1000));
     } else {
-        printf("No suitable PDO found, negotiating 5V\r\n\r\n");
+        printf("No suitable PDO found\r\n\r\n");
+        return false;
     }
+#else
+    if (!found) return false;
 #endif // STUSB4500_ENABLE_PRINTF
 
     // Push the new PDO
@@ -238,9 +241,9 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
     }
 
     // Read source capabilities
-    // WARNING: This must happen very soon after the previous code block is
-    // executed. The source will send an accept message which partially
-    // overwrites the source capabilities message. Use i2c clock >= 300 kHz
+    // WARNING: This must happen very soon after the previous code block is executed. The source
+    // will send an accept message which partially overwrites the source capabilities message.
+    // Use i2c clock >= 300 kHz
     if (!i2c_master_read(
           STUSB_ADDR,
           RX_DATA_OBJ,
