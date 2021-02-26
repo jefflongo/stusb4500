@@ -5,8 +5,11 @@
 
 #define STUSB4500_ENABLE_PRINTF
 
-#define GPIO_HIZ    0x00
-#define GPIO_LOW    0x01
+enum {
+    STUSB4500_GPIO_STATE_HIZ = 0,
+    STUSB4500_GPIO_STATE_LOW = 1,
+};
+typedef uint8_t stusb4500_gpio_state_t;
 
 typedef uint16_t stusb4500_current_t;
 typedef uint16_t stusb4500_voltage_t;
@@ -20,4 +23,4 @@ typedef struct {
 } stusb4500_config_t;
 
 __attribute__((nonnull(1))) bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt);
-bool stusb4500_set_gpio(uint8_t gpio);
+bool stusb4500_set_gpio_state(stusb4500_gpio_state_t state);
