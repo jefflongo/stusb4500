@@ -15,6 +15,7 @@
 #define CMD_CTRL 0x1A
 #define RESET_CTRL 0x23
 #define PE_FSM 0x29
+#define GPIO3_SW_GPIO 0x2D
 #define WHO_AM_I 0x2F
 #define RX_BYTE_CNT 0x30
 #define RX_HEADER 0x31
@@ -260,4 +261,12 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
 
     // Force a renegotiation
     return send_pd_message(PD_SOFT_RESET);
+}
+
+bool stusb4500_set_gpio(uint8_t gpio) {
+    // Sanity check to see if STUSB4500 is there
+    if (!is_present()) return false;
+
+    //Set GPIO state
+    return i2c_master_write_u8(STUSB_ADDR, GPIO3_SW_GPIO, gpio);
 }

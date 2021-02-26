@@ -3,6 +3,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define GPIO_CFG_SW_CTRL        0x00
+#define GPIO_CFG_ERROR_RECOVERY 0x01
+#define GPIO_CFG_DEBUG          0x02
+#define GPIO_CFG_SINK_POWER     0x03
+
 typedef uint16_t stusb4500_current_t;
 typedef uint16_t stusb4500_voltage_t;
 
@@ -24,6 +29,8 @@ typedef struct {
     bool use_src_current;
     // Do not fall back to 5V if no PDO match
     bool only_above_5v;
+    // GPIO configuration. See GPIO_CFG_* defined above
+    uint8_t gpio_cfg;
 } stusb4500_nvm_config_t;
 
 __attribute__((nonnull)) bool stusb4500_nvm_read(uint8_t* nvm);

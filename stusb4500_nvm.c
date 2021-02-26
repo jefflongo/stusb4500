@@ -111,6 +111,11 @@ RW_BUFFER: address 0x53
 #define POWER_ONLY_ABOVE_5V_SECTOR 4
 #define POWER_ONLY_ABOVE_5V_OFFSET 6
 
+#define GPIO_CFG_POS 4
+#define GPIO_CFG_MSK (0x03 << GPIO_CFG_POS)
+#define GPIO_CFG_SECTOR 1
+#define GPIO_CFG_OFFSET 0
+
 // 5 sectors, 8 bytes each
 #define NUM_SECTORS 5
 #define SECTOR_SIZE 8
@@ -344,6 +349,11 @@ static void apply_config(uint8_t* nvm, const stusb4500_nvm_config_t* config) {
       p_nvm[POWER_ONLY_ABOVE_5V_SECTOR][POWER_ONLY_ABOVE_5V_OFFSET],
       (config->only_above_5v << POWER_ONLY_ABOVE_5V_POS) & POWER_ONLY_ABOVE_5V_MSK,
       POWER_ONLY_ABOVE_5V_MSK);
+
+    MODIFY_REG(
+      p_nvm[GPIO_CFG_SECTOR][GPIO_CFG_OFFSET],
+      (config->gpio_cfg << GPIO_CFG_POS) & GPIO_CFG_MSK,
+      GPIO_CFG_MSK);
 }
 
 bool stusb4500_nvm_read(uint8_t* nvm) {
