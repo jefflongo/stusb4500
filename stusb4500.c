@@ -263,10 +263,10 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
     return send_pd_message(PD_SOFT_RESET);
 }
 
-bool stusb4500_set_gpio(uint8_t gpio) {
+bool stusb4500_set_gpio_state(stusb4500_gpio_state_t state) {
     // Sanity check to see if STUSB4500 is there
     if (!is_present()) return false;
 
-    //Set GPIO state
-    return i2c_master_write_u8(STUSB_ADDR, GPIO3_SW_GPIO, gpio);
+    // Set GPIO state
+    return i2c_master_write_u8(STUSB_ADDR, GPIO3_SW_GPIO, state);
 }
