@@ -7,73 +7,73 @@
 #endif // STUSB4500_ENABLE_PRINTF
 
 // STUSB4500 i2c address
-#define STUSB_ADDR 0x28
+#define STUSB_ADDR 0x28U
 
 // STUSB4500 registers
-#define PORT_STATUS 0x0E
-#define PRT_STATUS 0x16
-#define CMD_CTRL 0x1A
-#define RESET_CTRL 0x23
-#define PE_FSM 0x29
-#define GPIO3_SW_GPIO 0x2D
-#define WHO_AM_I 0x2F
-#define RX_BYTE_CNT 0x30
-#define RX_HEADER 0x31
-#define RX_DATA_OBJ 0x33
-#define TX_HEADER 0x51
-#define DPM_SNK_PDO1 0x85
+#define PORT_STATUS 0x0EU
+#define PRT_STATUS 0x16U
+#define CMD_CTRL 0x1AU
+#define RESET_CTRL 0x23U
+#define PE_FSM 0x29U
+#define GPIO3_SW_GPIO 0x2DU
+#define WHO_AM_I 0x2FU
+#define RX_BYTE_CNT 0x30U
+#define RX_HEADER 0x31U
+#define RX_DATA_OBJ 0x33U
+#define TX_HEADER 0x51U
+#define DPM_SNK_PDO1 0x85U
 
 // STUSB4500 masks/constants
-#define STUSB4500_ID 0x25
-#define STUSB4500B_ID 0x21
-#define SW_RESET_ON 0x01
-#define SW_RESET_OFF 0x00
-#define ATTACH 0x01
-#define PRT_MESSAGE_RECEIVED 0x04
-#define SRC_CAPABILITIES_MSG 0x01
-#define PE_SNK_READY 0x18
+#define STUSB4500_ID 0x25U
+#define STUSB4500B_ID 0x21U
+#define SW_RESET_ON 0x01U
+#define SW_RESET_OFF 0x00U
+#define ATTACH 0x01U
+#define PRT_MESSAGE_RECEIVED 0x04U
+#define SRC_CAPABILITIES_MSG 0x01U
+#define PE_SNK_READY 0x18U
 
 // Maximum number of source power profiles
-#define MAX_SRC_PDOS 10
+#define MAX_SRC_PDOS 10U
 
 // PD protocol commands, see USB PD spec Table 6-3
-#define PD_CMD 0x26
-#define PD_SOFT_RESET 0x000D
+#define PD_CMD 0x26U
+#define PD_SOFT_RESET 0x000DU
 
 // See USB PD spec Table 6-1
-#define MESSAGE_HEADER_POS 0
+#define MESSAGE_HEADER_POS 0U
 #ifdef USBPD_REV30_SUPPORT
-#define MESSAGE_HEADER_MSK (0x1F << MESSAGE_HEADER_POS)
+#define MESSAGE_HEADER_MSK (0x1FU << MESSAGE_HEADER_POS)
 #else // USBPD_REV30_SUPPORT
-#define MESSAGE_HEADER_MSK (0x0F << MESSAGE_HEADER_POS)
+#define MESSAGE_HEADER_MSK (0x0FU << MESSAGE_HEADER_POS)
 #endif // USBPD_REV30_SUPPORT
-#define HEADER_NUM_DATA_OBJECTS_POS 12
-#define HEADER_NUM_DATA_OBJECTS_MSK (0x07 << HEADER_NUM_DATA_OBJECTS_POS)
+#define HEADER_NUM_DATA_OBJECTS_POS 12U
+#define HEADER_NUM_DATA_OBJECTS_MSK (0x07U << HEADER_NUM_DATA_OBJECTS_POS)
 #define HEADER_MESSAGE_TYPE(header) (((header)&MESSAGE_HEADER_MSK) >> MESSAGE_HEADER_POS)
 #define HEADER_NUM_DATA_OBJECTS(header)                                                            \
     (((header)&HEADER_NUM_DATA_OBJECTS_MSK) >> HEADER_NUM_DATA_OBJECTS_POS)
 
 // See USB PD spec Section 7.1.3 and STUSB4500 Section 5.2 Table 16
-#define PDO_TYPE_POS 30
-#define PDO_TYPE_MSK (0x03 << PDO_TYPE_POS)
+#define PDO_TYPE_POS 30U
+#define PDO_TYPE_MSK (0x03U << PDO_TYPE_POS)
 #define PDO_TYPE(pdo) (((pdo)&PDO_TYPE_MSK) >> PDO_TYPE_POS)
-#define PDO_TYPE_FIXED 0x00
+#define PDO_TYPE_FIXED 0x00U
 
-#define PDO_CURRENT_POS 0
-#define PDO_CURRENT_MSK (0x03FF << PDO_CURRENT_POS)
-#define PDO_CURRENT_RESOLUTION 10
+#define PDO_CURRENT_POS 0U
+#define PDO_CURRENT_MSK (0x03FFU << PDO_CURRENT_POS)
+#define PDO_CURRENT_RESOLUTION 10U
 #define FROM_PDO_CURRENT(pdo)                                                                      \
     ((((pdo)&PDO_CURRENT_MSK) >> PDO_CURRENT_POS) * PDO_CURRENT_RESOLUTION)
 #define TO_PDO_CURRENT(ma) ((((ma) / PDO_CURRENT_RESOLUTION) << PDO_CURRENT_POS) & PDO_CURRENT_MSK)
 
-#define PDO_VOLTAGE_POS 10
-#define PDO_VOLTAGE_MSK (0x03FF << PDO_VOLTAGE_POS)
-#define PDO_VOLTAGE_RESOLUTION 50
+#define PDO_VOLTAGE_POS 10U
+#define PDO_VOLTAGE_MSK (0x03FFU << PDO_VOLTAGE_POS)
+#define PDO_VOLTAGE_RESOLUTION 50U
 #define FROM_PDO_VOLTAGE(pdo)                                                                      \
     ((((pdo)&PDO_VOLTAGE_MSK) >> PDO_VOLTAGE_POS) * PDO_VOLTAGE_RESOLUTION)
 #define TO_PDO_VOLTAGE(mv) ((((mv) / PDO_VOLTAGE_RESOLUTION) << PDO_VOLTAGE_POS) & PDO_VOLTAGE_MSK)
 
-#define TIMEOUT_MS 500
+#define TIMEOUT_MS 500U
 
 typedef uint32_t stusb4500_power_t;
 typedef uint32_t stusb4500_pdo_t;
@@ -198,6 +198,8 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
     uint8_t buffer[MAX_SRC_PDOS * sizeof(stusb4500_pdo_t)];
     uint16_t header;
     uint32_t start = 0;
+
+    if (!config) return false;
 
     // Sanity check to see if STUSB4500 is there
     if (!is_present()) return false;

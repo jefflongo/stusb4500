@@ -6,7 +6,7 @@
 #include <string.h>
 
 // I2C device ID
-#define STUSB_ADDR 0x28
+#define STUSB_ADDR 0x28U
 
 /* NVM Registers
 FTP_CUST_PASSWORD REG: address 0x95
@@ -36,94 +36,94 @@ FTP_CTRL_1: address 0x97
 RW_BUFFER: address 0x53
     [7:0] : Buffer used for reading and writing data */
 
-#define FTP_CUST_PASSWORD_REG 0x95
-#define FTP_CUST_PASSWORD 0x47
-#define FTP_CTRL_0 0x96
-#define FTP_CUST_PWR 0x80
-#define FTP_CUST_RST_N 0x40
-#define FTP_CUST_REQ 0x10
-#define FTP_CUST_SECT 0x07
-#define FTP_CTRL_1 0x97
-#define FTP_CUST_SER 0xF8
-#define FTP_CUST_OPCODE 0x07
-#define RW_BUFFER 0x53
+#define FTP_CUST_PASSWORD_REG 0x95U
+#define FTP_CUST_PASSWORD 0x47U
+#define FTP_CTRL_0 0x96U
+#define FTP_CUST_PWR 0x80U
+#define FTP_CUST_RST_N 0x40U
+#define FTP_CUST_REQ 0x10U
+#define FTP_CUST_SECT 0x07U
+#define FTP_CTRL_1 0x97U
+#define FTP_CUST_SER 0xF8U
+#define FTP_CUST_OPCODE 0x07U
+#define RW_BUFFER 0x53U
 
 // Opcodes
-#define READ 0x00             // Read memory array
-#define WRITE_PL 0x01         // Shift in data on Program Load (PL) Register
-#define WRITE_SER 0x02        // Shift in data on Sector Erase (SER) Register
-#define READ_PL 0x03          // Shift out data on Program Load (PL) Register
-#define READ_SER 0x04         // Shift out data on Sector Erase (SER) Register
-#define ERASE_SECTOR 0x05     // Erase memory array
-#define PROG_SECTOR 0x06      // Program 256b word into EEPROM
-#define SOFT_PROG_SECTOR 0x07 // Soft Program array
+#define READ 0x00U             // Read memory array
+#define WRITE_PL 0x01U         // Shift in data on Program Load (PL) Register
+#define WRITE_SER 0x02U        // Shift in data on Sector Erase (SER) Register
+#define READ_PL 0x03U          // Shift out data on Program Load (PL) Register
+#define READ_SER 0x04U         // Shift out data on Sector Erase (SER) Register
+#define ERASE_SECTOR 0x05U     // Erase memory array
+#define PROG_SECTOR 0x06U      // Program 256b word into EEPROM
+#define SOFT_PROG_SECTOR 0x07U // Soft Program array
 
 // Sector masks
-#define SECTOR0 0x01
-#define SECTOR1 0x02
-#define SECTOR2 0x04
-#define SECTOR3 0x08
-#define SECTOR4 0x10
+#define SECTOR0 0x01U
+#define SECTOR1 0x02U
+#define SECTOR2 0x04U
+#define SECTOR3 0x08U
+#define SECTOR4 0x10U
 
 // Register masks
-#define I_SNK_PDO1_POS 4
-#define I_SNK_PDO1_MSK (0x0F << I_SNK_PDO1_POS)
-#define I_SNK_PDO1_SECTOR 3
-#define I_SNK_PDO1_OFFSET 2
+#define I_SNK_PDO1_POS 4U
+#define I_SNK_PDO1_MSK (0x0FU << I_SNK_PDO1_POS)
+#define I_SNK_PDO1_SECTOR 3U
+#define I_SNK_PDO1_OFFSET 2U
 
-#define I_SNK_PDO2_POS 0
-#define I_SNK_PDO2_MSK (0x0F << I_SNK_PDO2_POS)
-#define I_SNK_PDO2_SECTOR 3
-#define I_SNK_PDO2_OFFSET 4
+#define I_SNK_PDO2_POS 0U
+#define I_SNK_PDO2_MSK (0x0FU << I_SNK_PDO2_POS)
+#define I_SNK_PDO2_SECTOR 3U
+#define I_SNK_PDO2_OFFSET 4U
 
-#define I_SNK_PDO3_POS 4
-#define I_SNK_PDO3_MSK (0x0F << I_SNK_PDO3_POS)
-#define I_SNK_PDO3_SECTOR 3
-#define I_SNK_PDO3_OFFSET 5
+#define I_SNK_PDO3_POS 4U
+#define I_SNK_PDO3_MSK (0x0FU << I_SNK_PDO3_POS)
+#define I_SNK_PDO3_SECTOR 3U
+#define I_SNK_PDO3_OFFSET 5U
 
-#define I_SNK_PDO_FLEX_POS 2
-#define I_SNK_PDO_FLEX_MSK (0x03FF << I_SNK_PDO_FLEX_POS)
-#define I_SNK_PDO_FLEX_SECTOR 4
-#define I_SNK_PDO_FLEX_OFFSET 3
+#define I_SNK_PDO_FLEX_POS 2U
+#define I_SNK_PDO_FLEX_MSK (0x03FFU << I_SNK_PDO_FLEX_POS)
+#define I_SNK_PDO_FLEX_SECTOR 4U
+#define I_SNK_PDO_FLEX_OFFSET 3U
 
-#define V_SNK_PDO2_POS 6
-#define V_SNK_PDO2_MSK (0x01FF << V_SNK_PDO2_POS)
-#define V_SNK_PDO2_SECTOR 4
-#define V_SNK_PDO2_OFFSET 0
+#define V_SNK_PDO2_POS 6U
+#define V_SNK_PDO2_MSK (0x01FFU << V_SNK_PDO2_POS)
+#define V_SNK_PDO2_SECTOR 4U
+#define V_SNK_PDO2_OFFSET 0U
 
-#define V_SNK_PDO3_POS 0
-#define V_SNK_PDO3_MSK (0x01FF << V_SNK_PDO3_POS)
-#define V_SNK_PDO3_SECTOR 4
-#define V_SNK_PDO3_OFFSET 2
+#define V_SNK_PDO3_POS 0U
+#define V_SNK_PDO3_MSK (0x01FFU << V_SNK_PDO3_POS)
+#define V_SNK_PDO3_SECTOR 4U
+#define V_SNK_PDO3_OFFSET 2U
 
-#define SNK_PDO_NUMB_POS 1
-#define SNK_PDO_NUMB_MSK (0x03 << SNK_PDO_NUMB_POS)
-#define SNK_PDO_NUMB_SECTOR 3
-#define SNK_PDO_NUMB_OFFSET 2
+#define SNK_PDO_NUMB_POS 1U
+#define SNK_PDO_NUMB_MSK (0x03U << SNK_PDO_NUMB_POS)
+#define SNK_PDO_NUMB_SECTOR 3U
+#define SNK_PDO_NUMB_OFFSET 2U
 
-#define REQ_SRC_CURRENT_POS 4
-#define REQ_SRC_CURRENT_MSK (1u << REQ_SRC_CURRENT_POS)
-#define REQ_SRC_CURRENT_SECTOR 4
-#define REQ_SRC_CURRENT_OFFSET 6
+#define REQ_SRC_CURRENT_POS 4U
+#define REQ_SRC_CURRENT_MSK (1U << REQ_SRC_CURRENT_POS)
+#define REQ_SRC_CURRENT_SECTOR 4U
+#define REQ_SRC_CURRENT_OFFSET 6U
 
-#define POWER_ONLY_ABOVE_5V_POS 2
-#define POWER_ONLY_ABOVE_5V_MSK (1u << POWER_ONLY_ABOVE_5V_POS)
-#define POWER_ONLY_ABOVE_5V_SECTOR 4
-#define POWER_ONLY_ABOVE_5V_OFFSET 6
+#define POWER_ONLY_ABOVE_5V_POS 2U
+#define POWER_ONLY_ABOVE_5V_MSK (1U << POWER_ONLY_ABOVE_5V_POS)
+#define POWER_ONLY_ABOVE_5V_SECTOR 4U
+#define POWER_ONLY_ABOVE_5V_OFFSET 6U
 
-#define GPIO_CFG_POS 4
-#define GPIO_CFG_MSK (0x03 << GPIO_CFG_POS)
-#define GPIO_CFG_SECTOR 1
-#define GPIO_CFG_OFFSET 0
+#define GPIO_CFG_POS 4U
+#define GPIO_CFG_MSK (0x03U << GPIO_CFG_POS)
+#define GPIO_CFG_SECTOR 1U
+#define GPIO_CFG_OFFSET 0U
 
 // 5 sectors, 8 bytes each
-#define NUM_SECTORS 5
-#define SECTOR_SIZE 8
+#define NUM_SECTORS 5U
+#define SECTOR_SIZE 8U
 #define NVM_SIZE (NUM_SECTORS * SECTOR_SIZE)
 
-#define PDO_VOLTAGE(mv) ((mv) / 50)
-#define PDO_CURRENT(ma) (((ma)-250) / 250)
-#define PDO_CURRENT_FLEX(ma) ((ma) / 10)
+#define PDO_VOLTAGE(mv) ((mv) / 50U)
+#define PDO_CURRENT(ma) (((ma)-250U) / 250U)
+#define PDO_CURRENT_FLEX(ma) ((ma) / 10U)
 
 #define MODIFY_REG(reg, data, mask) reg = (((reg) & ~(mask)) | ((data) & (mask)))
 
@@ -357,6 +357,8 @@ static void apply_config(uint8_t* nvm, const stusb4500_nvm_config_t* config) {
 }
 
 bool stusb4500_nvm_read(uint8_t* nvm) {
+    if (!nvm) return false;
+
     if (!enter_read_mode()) return false;
 
     uint8_t* p_nvm = nvm;
@@ -373,6 +375,8 @@ bool stusb4500_nvm_read(uint8_t* nvm) {
 bool stusb4500_nvm_flash(const stusb4500_nvm_config_t* config) {
     uint8_t nvm[NUM_SECTORS][SECTOR_SIZE];
     uint8_t nvm_modified[NUM_SECTORS][SECTOR_SIZE];
+
+    if (!config) return false;
 
     if (!stusb4500_nvm_read((uint8_t*)nvm)) return false;
 

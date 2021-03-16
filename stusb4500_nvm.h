@@ -7,10 +7,10 @@ typedef uint16_t stusb4500_current_t;
 typedef uint16_t stusb4500_voltage_t;
 
 enum {
-    STUSB4500_GPIO_CFG_SW_CTRL = 0x00,
-    STUSB4500_GPIO_CFG_ERROR_RECOVERY = 0x01,
-    STUSB4500_GPIO_CFG_DEBUG = 0x02,
-    STUSB4500_GPIO_CFG_SINK_POWER = 0x03,
+    STUSB4500_GPIO_CFG_SW_CTRL = 0x00U,
+    STUSB4500_GPIO_CFG_ERROR_RECOVERY = 0x01U,
+    STUSB4500_GPIO_CFG_DEBUG = 0x02U,
+    STUSB4500_GPIO_CFG_SINK_POWER = 0x03U,
 };
 typedef uint8_t stusb4500_gpio_cfg_t;
 
@@ -36,5 +36,5 @@ typedef struct {
     stusb4500_gpio_cfg_t gpio_cfg;
 } stusb4500_nvm_config_t;
 
-__attribute__((nonnull)) bool stusb4500_nvm_read(uint8_t* nvm);
-__attribute__((nonnull)) bool stusb4500_nvm_flash(const stusb4500_nvm_config_t* config);
+bool stusb4500_nvm_read(uint8_t* nvm);
+bool stusb4500_nvm_flash(const stusb4500_nvm_config_t* config);
