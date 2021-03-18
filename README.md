@@ -37,4 +37,4 @@ The STUSB4500's non-volatile memory (NVM) determines what power profiles are con
 | POWER_ONLY_ABOVE_5V | Only output if negotiation above 5V     |
 | GPIO_CFG            | Configures the behavior of the GPIO pin |
 
-To program the NVM, include `stusb4500_nvm.h` and run `stusb4500_nvm_flash()` with your config. `stusb4500_nvm_flash()` returns true after writing and validating the flash.
+To program the NVM, include `stusb4500_nvm.h` and run `stusb4500_nvm_flash` with your config. `stusb4500_nvm_flash` returns true after writing and validating the flash.
