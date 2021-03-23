@@ -6,8 +6,8 @@
 #define STUSB4500_ENABLE_PRINTF
 
 enum {
-    STUSB4500_GPIO_STATE_HIZ = 0U,
-    STUSB4500_GPIO_STATE_LOW = 1U,
+    STUSB4500_GPIO_STATE_HIZ = 0UL,
+    STUSB4500_GPIO_STATE_LOW = 1UL,
 };
 typedef uint8_t stusb4500_gpio_state_t;
 

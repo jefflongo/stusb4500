@@ -7,73 +7,73 @@
 #endif // STUSB4500_ENABLE_PRINTF
 
 // STUSB4500 i2c address
-#define STUSB_ADDR 0x28U
+#define STUSB_ADDR 0x28UL
 
 // STUSB4500 registers
-#define PORT_STATUS 0x0EU
-#define PRT_STATUS 0x16U
-#define CMD_CTRL 0x1AU
-#define RESET_CTRL 0x23U
-#define PE_FSM 0x29U
-#define GPIO3_SW_GPIO 0x2DU
-#define WHO_AM_I 0x2FU
-#define RX_BYTE_CNT 0x30U
-#define RX_HEADER 0x31U
-#define RX_DATA_OBJ 0x33U
-#define TX_HEADER 0x51U
-#define DPM_SNK_PDO1 0x85U
+#define PORT_STATUS 0x0EUL
+#define PRT_STATUS 0x16UL
+#define CMD_CTRL 0x1AUL
+#define RESET_CTRL 0x23UL
+#define PE_FSM 0x29UL
+#define GPIO3_SW_GPIO 0x2DUL
+#define WHO_AM_I 0x2FUL
+#define RX_BYTE_CNT 0x30UL
+#define RX_HEADER 0x31UL
+#define RX_DATA_OBJ 0x33UL
+#define TX_HEADER 0x51UL
+#define DPM_SNK_PDO1 0x85UL
 
 // STUSB4500 masks/constants
-#define STUSB4500_ID 0x25U
-#define STUSB4500B_ID 0x21U
-#define SW_RESET_ON 0x01U
-#define SW_RESET_OFF 0x00U
-#define ATTACH 0x01U
-#define PRT_MESSAGE_RECEIVED 0x04U
-#define SRC_CAPABILITIES_MSG 0x01U
-#define PE_SNK_READY 0x18U
+#define STUSB4500_ID 0x25UL
+#define STUSB4500B_ID 0x21UL
+#define SW_RESET_ON 0x01UL
+#define SW_RESET_OFF 0x00UL
+#define ATTACH 0x01UL
+#define PRT_MESSAGE_RECEIVED 0x04UL
+#define SRC_CAPABILITIES_MSG 0x01UL
+#define PE_SNK_READY 0x18UL
 
 // Maximum number of source power profiles
-#define MAX_SRC_PDOS 10U
+#define MAX_SRC_PDOS 10UL
 
 // PD protocol commands, see USB PD spec Table 6-3
-#define PD_CMD 0x26U
-#define PD_SOFT_RESET 0x000DU
+#define PD_CMD 0x26UL
+#define PD_SOFT_RESET 0x000DUL
 
 // See USB PD spec Table 6-1
-#define MESSAGE_HEADER_POS 0U
+#define MESSAGE_HEADER_POS 0UL
 #ifdef USBPD_REV30_SUPPORT
-#define MESSAGE_HEADER_MSK (0x1FU << MESSAGE_HEADER_POS)
+#define MESSAGE_HEADER_MSK (0x1FUL << MESSAGE_HEADER_POS)
 #else // USBPD_REV30_SUPPORT
-#define MESSAGE_HEADER_MSK (0x0FU << MESSAGE_HEADER_POS)
+#define MESSAGE_HEADER_MSK (0x0FUL << MESSAGE_HEADER_POS)
 #endif // USBPD_REV30_SUPPORT
-#define HEADER_NUM_DATA_OBJECTS_POS 12U
-#define HEADER_NUM_DATA_OBJECTS_MSK (0x07U << HEADER_NUM_DATA_OBJECTS_POS)
+#define HEADER_NUM_DATA_OBJECTS_POS 12UL
+#define HEADER_NUM_DATA_OBJECTS_MSK (0x07UL << HEADER_NUM_DATA_OBJECTS_POS)
 #define HEADER_MESSAGE_TYPE(header) (((header)&MESSAGE_HEADER_MSK) >> MESSAGE_HEADER_POS)
 #define HEADER_NUM_DATA_OBJECTS(header)                                                            \
     (((header)&HEADER_NUM_DATA_OBJECTS_MSK) >> HEADER_NUM_DATA_OBJECTS_POS)
 
 // See USB PD spec Section 7.1.3 and STUSB4500 Section 5.2 Table 16
-#define PDO_TYPE_POS 30U
-#define PDO_TYPE_MSK (0x03U << PDO_TYPE_POS)
+#define PDO_TYPE_POS 30UL
+#define PDO_TYPE_MSK (0x03UL << PDO_TYPE_POS)
 #define PDO_TYPE(pdo) (((pdo)&PDO_TYPE_MSK) >> PDO_TYPE_POS)
-#define PDO_TYPE_FIXED 0x00U
+#define PDO_TYPE_FIXED 0x00UL
 
-#define PDO_CURRENT_POS 0U
-#define PDO_CURRENT_MSK (0x03FFU << PDO_CURRENT_POS)
-#define PDO_CURRENT_RESOLUTION 10U
+#define PDO_CURRENT_POS 0UL
+#define PDO_CURRENT_MSK (0x03FFUL << PDO_CURRENT_POS)
+#define PDO_CURRENT_RESOLUTION 10UL
 #define FROM_PDO_CURRENT(pdo)                                                                      \
     ((((pdo)&PDO_CURRENT_MSK) >> PDO_CURRENT_POS) * PDO_CURRENT_RESOLUTION)
 #define TO_PDO_CURRENT(ma) ((((ma) / PDO_CURRENT_RESOLUTION) << PDO_CURRENT_POS) & PDO_CURRENT_MSK)
 
-#define PDO_VOLTAGE_POS 10U
-#define PDO_VOLTAGE_MSK (0x03FFU << PDO_VOLTAGE_POS)
-#define PDO_VOLTAGE_RESOLUTION 50U
+#define PDO_VOLTAGE_POS 10UL
+#define PDO_VOLTAGE_MSK (0x03FFUL << PDO_VOLTAGE_POS)
+#define PDO_VOLTAGE_RESOLUTION 50UL
 #define FROM_PDO_VOLTAGE(pdo)                                                                      \
     ((((pdo)&PDO_VOLTAGE_MSK) >> PDO_VOLTAGE_POS) * PDO_VOLTAGE_RESOLUTION)
 #define TO_PDO_VOLTAGE(mv) ((((mv) / PDO_VOLTAGE_RESOLUTION) << PDO_VOLTAGE_POS) & PDO_VOLTAGE_MSK)
 
-#define TIMEOUT_MS 500U
+#define TIMEOUT_MS 500UL
 
 typedef uint32_t stusb4500_power_t;
 typedef uint32_t stusb4500_pdo_t;
@@ -127,7 +127,8 @@ static bool
 
     stusb4500_current_t opt_pdo_current = config->min_current_ma;
     stusb4500_voltage_t opt_pdo_voltage = config->min_voltage_mv;
-    stusb4500_power_t opt_pdo_power = opt_pdo_voltage * opt_pdo_current / 1000;
+    stusb4500_power_t opt_pdo_power =
+      (stusb4500_power_t)opt_pdo_voltage * (stusb4500_power_t)opt_pdo_current / 1000UL;
 
     // Search for the optimal PDO, if any
     for (int i = 0; i < num_pdos; i++) {
@@ -136,17 +137,18 @@ static bool
         // Extract PDO parameters
         stusb4500_current_t pdo_current = FROM_PDO_CURRENT(pdo);
         stusb4500_voltage_t pdo_voltage = FROM_PDO_VOLTAGE(pdo);
-        stusb4500_power_t pdo_power = pdo_current * pdo_voltage / 1000;
+        stusb4500_power_t pdo_power =
+          (stusb4500_power_t)pdo_current * (stusb4500_power_t)pdo_voltage / 1000UL;
 
 #ifdef STUSB4500_ENABLE_PRINTF
         printf(
           "Detected Source PDO: %2d.%03dV, %d.%03dA, %3d.%03dW\r\n",
-          (int)(pdo_voltage / 1000),
-          (int)(pdo_voltage % 1000),
-          (int)(pdo_current / 1000),
-          (int)(pdo_current % 1000),
-          (int)(pdo_power / 1000),
-          (int)(pdo_power % 1000));
+          (int)(pdo_voltage / 1000UL),
+          (int)(pdo_voltage % 1000UL),
+          (int)(pdo_current / 1000UL),
+          (int)(pdo_current % 1000UL),
+          (int)((stusb4500_power_t)pdo_power / 1000UL),
+          (int)((stusb4500_power_t)pdo_power % 1000UL));
 #endif // STUSB4500_ENABLE_PRINTF
 
         if (
@@ -165,21 +167,21 @@ static bool
     printf(
       "\r\nSelecting optimal PDO based on user parameters: %d.%03dV - %d.%03dV, >= "
       "%d.%03dA\r\n",
-      (int)(config->min_voltage_mv / 1000),
-      (int)(config->min_voltage_mv % 1000),
-      (int)(config->max_voltage_mv / 1000),
-      (int)(config->max_voltage_mv % 1000),
-      (int)(config->min_current_ma / 1000),
-      (int)(config->min_current_ma % 1000));
+      (int)(config->min_voltage_mv / 1000UL),
+      (int)(config->min_voltage_mv % 1000UL),
+      (int)(config->max_voltage_mv / 1000UL),
+      (int)(config->max_voltage_mv % 1000UL),
+      (int)(config->min_current_ma / 1000UL),
+      (int)(config->min_current_ma % 1000UL));
     if (found) {
         printf(
           "Selected PDO: %d.%03dV, %d.%03dA, %d.%03dW\r\n\r\n",
-          (int)(opt_pdo_voltage / 1000),
-          (int)(opt_pdo_voltage % 1000),
-          (int)(opt_pdo_current / 1000),
-          (int)(opt_pdo_current % 1000),
-          (int)(opt_pdo_power / 1000),
-          (int)(opt_pdo_power % 1000));
+          (int)(opt_pdo_voltage / 1000UL),
+          (int)(opt_pdo_voltage % 1000UL),
+          (int)(opt_pdo_current / 1000UL),
+          (int)(opt_pdo_current % 1000UL),
+          (int)((stusb4500_power_t)opt_pdo_power / 1000UL),
+          (int)((stusb4500_power_t)opt_pdo_power % 1000UL));
     } else {
         printf("No suitable PDO found\r\n\r\n");
         return false;

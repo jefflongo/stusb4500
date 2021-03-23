@@ -6,7 +6,7 @@
 #include <string.h>
 
 // I2C device ID
-#define STUSB_ADDR 0x28U
+#define STUSB_ADDR 0x28UL
 
 /* NVM Registers
 FTP_CUST_PASSWORD REG: address 0x95
@@ -36,94 +36,94 @@ FTP_CTRL_1: address 0x97
 RW_BUFFER: address 0x53
     [7:0] : Buffer used for reading and writing data */
 
-#define FTP_CUST_PASSWORD_REG 0x95U
-#define FTP_CUST_PASSWORD 0x47U
-#define FTP_CTRL_0 0x96U
-#define FTP_CUST_PWR 0x80U
-#define FTP_CUST_RST_N 0x40U
-#define FTP_CUST_REQ 0x10U
-#define FTP_CUST_SECT 0x07U
-#define FTP_CTRL_1 0x97U
-#define FTP_CUST_SER 0xF8U
-#define FTP_CUST_OPCODE 0x07U
-#define RW_BUFFER 0x53U
+#define FTP_CUST_PASSWORD_REG 0x95UL
+#define FTP_CUST_PASSWORD 0x47UL
+#define FTP_CTRL_0 0x96UL
+#define FTP_CUST_PWR 0x80UL
+#define FTP_CUST_RST_N 0x40UL
+#define FTP_CUST_REQ 0x10UL
+#define FTP_CUST_SECT 0x07UL
+#define FTP_CTRL_1 0x97UL
+#define FTP_CUST_SER 0xF8UL
+#define FTP_CUST_OPCODE 0x07UL
+#define RW_BUFFER 0x53UL
 
 // Opcodes
-#define READ 0x00U             // Read memory array
-#define WRITE_PL 0x01U         // Shift in data on Program Load (PL) Register
-#define WRITE_SER 0x02U        // Shift in data on Sector Erase (SER) Register
-#define READ_PL 0x03U          // Shift out data on Program Load (PL) Register
-#define READ_SER 0x04U         // Shift out data on Sector Erase (SER) Register
-#define ERASE_SECTOR 0x05U     // Erase memory array
-#define PROG_SECTOR 0x06U      // Program 256b word into EEPROM
-#define SOFT_PROG_SECTOR 0x07U // Soft Program array
+#define READ 0x00UL             // Read memory array
+#define WRITE_PL 0x01UL         // Shift in data on Program Load (PL) Register
+#define WRITE_SER 0x02UL        // Shift in data on Sector Erase (SER) Register
+#define READ_PL 0x03UL          // Shift out data on Program Load (PL) Register
+#define READ_SER 0x04UL         // Shift out data on Sector Erase (SER) Register
+#define ERASE_SECTOR 0x05UL     // Erase memory array
+#define PROG_SECTOR 0x06UL      // Program 256b word into EEPROM
+#define SOFT_PROG_SECTOR 0x07UL // Soft Program array
 
 // Sector masks
-#define SECTOR0 0x01U
-#define SECTOR1 0x02U
-#define SECTOR2 0x04U
-#define SECTOR3 0x08U
-#define SECTOR4 0x10U
+#define SECTOR0 0x01UL
+#define SECTOR1 0x02UL
+#define SECTOR2 0x04UL
+#define SECTOR3 0x08UL
+#define SECTOR4 0x10UL
 
 // Register masks
-#define I_SNK_PDO1_POS 4U
-#define I_SNK_PDO1_MSK (0x0FU << I_SNK_PDO1_POS)
-#define I_SNK_PDO1_SECTOR 3U
-#define I_SNK_PDO1_OFFSET 2U
+#define I_SNK_PDO1_POS 4UL
+#define I_SNK_PDO1_MSK (0x0FUL << I_SNK_PDO1_POS)
+#define I_SNK_PDO1_SECTOR 3UL
+#define I_SNK_PDO1_OFFSET 2UL
 
-#define I_SNK_PDO2_POS 0U
-#define I_SNK_PDO2_MSK (0x0FU << I_SNK_PDO2_POS)
-#define I_SNK_PDO2_SECTOR 3U
-#define I_SNK_PDO2_OFFSET 4U
+#define I_SNK_PDO2_POS 0UL
+#define I_SNK_PDO2_MSK (0x0FUL << I_SNK_PDO2_POS)
+#define I_SNK_PDO2_SECTOR 3UL
+#define I_SNK_PDO2_OFFSET 4UL
 
-#define I_SNK_PDO3_POS 4U
-#define I_SNK_PDO3_MSK (0x0FU << I_SNK_PDO3_POS)
-#define I_SNK_PDO3_SECTOR 3U
-#define I_SNK_PDO3_OFFSET 5U
+#define I_SNK_PDO3_POS 4UL
+#define I_SNK_PDO3_MSK (0x0FUL << I_SNK_PDO3_POS)
+#define I_SNK_PDO3_SECTOR 3UL
+#define I_SNK_PDO3_OFFSET 5UL
 
-#define I_SNK_PDO_FLEX_POS 2U
-#define I_SNK_PDO_FLEX_MSK (0x03FFU << I_SNK_PDO_FLEX_POS)
-#define I_SNK_PDO_FLEX_SECTOR 4U
-#define I_SNK_PDO_FLEX_OFFSET 3U
+#define I_SNK_PDO_FLEX_POS 2UL
+#define I_SNK_PDO_FLEX_MSK (0x03FFUL << I_SNK_PDO_FLEX_POS)
+#define I_SNK_PDO_FLEX_SECTOR 4UL
+#define I_SNK_PDO_FLEX_OFFSET 3UL
 
-#define V_SNK_PDO2_POS 6U
-#define V_SNK_PDO2_MSK (0x01FFU << V_SNK_PDO2_POS)
-#define V_SNK_PDO2_SECTOR 4U
-#define V_SNK_PDO2_OFFSET 0U
+#define V_SNK_PDO2_POS 6UL
+#define V_SNK_PDO2_MSK (0x01FFUL << V_SNK_PDO2_POS)
+#define V_SNK_PDO2_SECTOR 4UL
+#define V_SNK_PDO2_OFFSET 0UL
 
-#define V_SNK_PDO3_POS 0U
-#define V_SNK_PDO3_MSK (0x01FFU << V_SNK_PDO3_POS)
-#define V_SNK_PDO3_SECTOR 4U
-#define V_SNK_PDO3_OFFSET 2U
+#define V_SNK_PDO3_POS 0UL
+#define V_SNK_PDO3_MSK (0x01FFUL << V_SNK_PDO3_POS)
+#define V_SNK_PDO3_SECTOR 4UL
+#define V_SNK_PDO3_OFFSET 2UL
 
-#define SNK_PDO_NUMB_POS 1U
-#define SNK_PDO_NUMB_MSK (0x03U << SNK_PDO_NUMB_POS)
-#define SNK_PDO_NUMB_SECTOR 3U
-#define SNK_PDO_NUMB_OFFSET 2U
+#define SNK_PDO_NUMB_POS 1UL
+#define SNK_PDO_NUMB_MSK (0x03UL << SNK_PDO_NUMB_POS)
+#define SNK_PDO_NUMB_SECTOR 3UL
+#define SNK_PDO_NUMB_OFFSET 2UL
 
-#define REQ_SRC_CURRENT_POS 4U
-#define REQ_SRC_CURRENT_MSK (1U << REQ_SRC_CURRENT_POS)
-#define REQ_SRC_CURRENT_SECTOR 4U
-#define REQ_SRC_CURRENT_OFFSET 6U
+#define REQ_SRC_CURRENT_POS 4UL
+#define REQ_SRC_CURRENT_MSK (1UL << REQ_SRC_CURRENT_POS)
+#define REQ_SRC_CURRENT_SECTOR 4UL
+#define REQ_SRC_CURRENT_OFFSET 6UL
 
-#define POWER_ONLY_ABOVE_5V_POS 2U
-#define POWER_ONLY_ABOVE_5V_MSK (1U << POWER_ONLY_ABOVE_5V_POS)
-#define POWER_ONLY_ABOVE_5V_SECTOR 4U
-#define POWER_ONLY_ABOVE_5V_OFFSET 6U
+#define POWER_ONLY_ABOVE_5V_POS 2UL
+#define POWER_ONLY_ABOVE_5V_MSK (1UL << POWER_ONLY_ABOVE_5V_POS)
+#define POWER_ONLY_ABOVE_5V_SECTOR 4UL
+#define POWER_ONLY_ABOVE_5V_OFFSET 6UL
 
-#define GPIO_CFG_POS 4U
-#define GPIO_CFG_MSK (0x03U << GPIO_CFG_POS)
-#define GPIO_CFG_SECTOR 1U
-#define GPIO_CFG_OFFSET 0U
+#define GPIO_CFG_POS 4UL
+#define GPIO_CFG_MSK (0x03UL << GPIO_CFG_POS)
+#define GPIO_CFG_SECTOR 1UL
+#define GPIO_CFG_OFFSET 0UL
 
 // 5 sectors, 8 bytes each
-#define NUM_SECTORS 5U
-#define SECTOR_SIZE 8U
+#define NUM_SECTORS 5UL
+#define SECTOR_SIZE 8UL
 #define NVM_SIZE (NUM_SECTORS * SECTOR_SIZE)
 
-#define PDO_VOLTAGE(mv) ((mv) / 50U)
-#define PDO_CURRENT(ma) (((ma)-250U) / 250U)
-#define PDO_CURRENT_FLEX(ma) ((ma) / 10U)
+#define PDO_VOLTAGE(mv) ((mv) / 50UL)
+#define PDO_CURRENT(ma) (((ma)-250UL) / 250UL)
+#define PDO_CURRENT_FLEX(ma) ((ma) / 10UL)
 
 #define MODIFY_REG(reg, data, mask) reg = (((reg) & ~(mask)) | ((data) & (mask)))
 
@@ -382,6 +382,8 @@ bool stusb4500_nvm_flash(const stusb4500_nvm_config_t* config) {
 
     memcpy(nvm_modified, nvm, NVM_SIZE);
     apply_config((uint8_t*)nvm_modified, config);
+
+    if (memcmp(nvm_modified, nvm, NVM_SIZE) == 0) return exit_rw_mode();
 
     if (!enter_write_mode()) return false;
 
