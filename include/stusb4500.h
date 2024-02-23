@@ -3,7 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define STUSB4500_ENABLE_PRINTF
+#ifndef STUSB4500_LOG
+#define STUSB4500_LOG(fmt, ...)
+#endif // STUSB4500_LOG
 
 enum {
     STUSB4500_GPIO_STATE_HIZ = 0UL,
@@ -22,5 +24,5 @@ typedef struct {
     stusb4500_get_ms_func_t get_ms;
 } stusb4500_config_t;
 
-bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt);
+bool stusb4500_negotiate(stusb4500_config_t* const config, bool on_interrupt);
 bool stusb4500_set_gpio_state(stusb4500_gpio_state_t state);

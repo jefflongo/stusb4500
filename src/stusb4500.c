@@ -1,11 +1,5 @@
 #include "stusb4500.h"
 
-#include "i2c.h"
-
-#ifdef STUSB4500_ENABLE_PRINTF
-#include <stdio.h>
-#endif // STUSB4500_ENABLE_PRINTF
-
 // STUSB4500 i2c address
 #define STUSB_ADDR 0x28UL
 
@@ -140,8 +134,7 @@ static bool
         stusb4500_power_t pdo_power =
           (stusb4500_power_t)pdo_current * (stusb4500_power_t)pdo_voltage / 1000UL;
 
-#ifdef STUSB4500_ENABLE_PRINTF
-        printf(
+        STUSB4500_LOG(
           "Detected Source PDO: %2d.%03dV, %d.%03dA, %3d.%03dW\r\n",
           (int)(pdo_voltage / 1000UL),
           (int)(pdo_voltage % 1000UL),
@@ -149,7 +142,6 @@ static bool
           (int)(pdo_current % 1000UL),
           (int)((stusb4500_power_t)pdo_power / 1000UL),
           (int)((stusb4500_power_t)pdo_power % 1000UL));
-#endif // STUSB4500_ENABLE_PRINTF
 
         if (
           PDO_TYPE(pdo) != PDO_TYPE_FIXED || pdo_current < config->min_current_ma ||
@@ -163,8 +155,7 @@ static bool
         }
     }
 
-#ifdef STUSB4500_ENABLE_PRINTF
-    printf(
+    STUSB4500_LOG(
       "\r\nSelecting optimal PDO based on user parameters: %d.%03dV - %d.%03dV, >= "
       "%d.%03dA\r\n",
       (int)(config->min_voltage_mv / 1000UL),
@@ -174,7 +165,7 @@ static bool
       (int)(config->min_current_ma / 1000UL),
       (int)(config->min_current_ma % 1000UL));
     if (found) {
-        printf(
+        STUSB4500_LOG(
           "Selected PDO: %d.%03dV, %d.%03dA, %d.%03dW\r\n\r\n",
           (int)(opt_pdo_voltage / 1000UL),
           (int)(opt_pdo_voltage % 1000UL),
@@ -183,12 +174,9 @@ static bool
           (int)((stusb4500_power_t)opt_pdo_power / 1000UL),
           (int)((stusb4500_power_t)opt_pdo_power % 1000UL));
     } else {
-        printf("No suitable PDO found\r\n\r\n");
+        STUSB4500_LOG("No suitable PDO found\r\n\r\n");
         return false;
     }
-#else
-    if (!found) return false;
-#endif // STUSB4500_ENABLE_PRINTF
 
     // Push the new PDO
     if (!write_pdo(opt_pdo_current, opt_pdo_voltage, 3)) return false;

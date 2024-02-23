@@ -1,7 +1,5 @@
 #include "stusb4500_nvm.h"
 
-#include "i2c.h"
-
 #include <assert.h>
 #include <string.h>
 
@@ -302,7 +300,7 @@ static bool exit_rw_mode(void) {
     return true;
 }
 
-static void apply_config(uint8_t* nvm, const stusb4500_nvm_config_t* config) {
+static void apply_config(uint8_t* nvm, stusb4500_nvm_config_t const* config) {
     uint8_t(*p_nvm)[SECTOR_SIZE] = (uint8_t(*)[SECTOR_SIZE])nvm;
 
     MODIFY_REG(
@@ -372,7 +370,7 @@ bool stusb4500_nvm_read(uint8_t* nvm) {
     return true;
 }
 
-bool stusb4500_nvm_flash(const stusb4500_nvm_config_t* config) {
+bool stusb4500_nvm_flash(stusb4500_nvm_config_t const* config) {
     uint8_t nvm[NUM_SECTORS][SECTOR_SIZE];
     uint8_t nvm_modified[NUM_SECTORS][SECTOR_SIZE];
 
