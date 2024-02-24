@@ -1,37 +1,28 @@
 #include "stusb4500.h"
 
-#include "i2c.h"
-
-#ifdef STUSB4500_ENABLE_PRINTF
-#include <stdio.h>
-#endif // STUSB4500_ENABLE_PRINTF
-
-// STUSB4500 i2c address
-#define STUSB_ADDR 0x28UL
-
 // STUSB4500 registers
-#define PORT_STATUS 0x0EUL
-#define PRT_STATUS 0x16UL
-#define CMD_CTRL 0x1AUL
-#define RESET_CTRL 0x23UL
-#define PE_FSM 0x29UL
-#define GPIO3_SW_GPIO 0x2DUL
-#define WHO_AM_I 0x2FUL
-#define RX_BYTE_CNT 0x30UL
-#define RX_HEADER 0x31UL
-#define RX_DATA_OBJ 0x33UL
-#define TX_HEADER 0x51UL
-#define DPM_SNK_PDO1 0x85UL
+#define STUSB_PORT_STATUS 0x0EUL
+#define STUSB_PRT_STATUS 0x16UL
+#define STUSB_CMD_CTRL 0x1AUL
+#define STUSB_RESET_CTRL 0x23UL
+#define STUSB_PE_FSM 0x29UL
+#define STUSB_GPIO3_SW_GPIO 0x2DUL
+#define STUSB_WHO_AM_I 0x2FUL
+#define STUSB_RX_BYTE_CNT 0x30UL
+#define STUSB_RX_HEADER 0x31UL
+#define STUSB_RX_DATA_OBJ 0x33UL
+#define STUSB_TX_HEADER 0x51UL
+#define STUSB_DPM_SNK_PDO1 0x85UL
 
 // STUSB4500 masks/constants
 #define STUSB4500_ID 0x25UL
 #define STUSB4500B_ID 0x21UL
-#define SW_RESET_ON 0x01UL
-#define SW_RESET_OFF 0x00UL
-#define ATTACH 0x01UL
-#define PRT_MESSAGE_RECEIVED 0x04UL
-#define SRC_CAPABILITIES_MSG 0x01UL
-#define PE_SNK_READY 0x18UL
+#define STUSB_SW_RESET_ON 0x01UL
+#define STUSB_SW_RESET_OFF 0x00UL
+#define STUSB_ATTACH 0x01UL
+#define STUSB_PRT_MESSAGE_RECEIVED 0x04UL
+#define STUSB_SRC_CAPABILITIES_MSG 0x01UL
+#define STUSB_PE_SNK_READY 0x18UL
 
 // Maximum number of source power profiles
 #define MAX_SRC_PDOS 10UL
@@ -80,20 +71,21 @@ typedef uint32_t stusb4500_pdo_t;
 typedef uint8_t stusb4500_pd_state_t;
 
 // PD_SOFT_RESET seems to be the only message the STUSB4500 supports
-static bool send_pd_message(const uint16_t msg) {
-    return (
-      i2c_master_write_u16(STUSB_ADDR, TX_HEADER, msg) &&
-      i2c_master_write_u8(STUSB_ADDR, CMD_CTRL, PD_CMD));
+static bool send_pd_message(stusb4500_t const* dev, uint16_t msg) {
+    uint8_t cmd = PD_CMD;
+    return dev->write(dev->addr, STUSB_TX_HEADER, &msg, sizeof(uint16_t), dev->context) &&
+           dev->write(dev->addr, STUSB_CMD_CTRL, &cmd, 1, dev->context);
 }
 
-static bool is_present(void) {
+static bool is_present(stusb4500_t const* dev) {
     uint8_t res;
-    if (!i2c_master_read_u8(STUSB_ADDR, WHO_AM_I, &res)) return false;
+    if (!dev->read(dev->addr, STUSB_WHO_AM_I, &res, 1, dev->context)) return false;
 
     return (res == STUSB4500_ID || res == STUSB4500B_ID);
 }
 
-static bool wait_until_ready_with_timeout(stusb4500_config_t* config) {
+static bool
+  wait_until_ready_with_timeout(stusb4500_t const* dev, stusb4500_config_t const* config) {
     stusb4500_pd_state_t pd_state;
     uint32_t start = 0;
 
@@ -103,26 +95,36 @@ static bool wait_until_ready_with_timeout(stusb4500_config_t* config) {
 
     do {
         if (config->get_ms && (config->get_ms() - start > TIMEOUT_MS)) return false;
-        if (!i2c_master_read_u8(STUSB_ADDR, PE_FSM, &pd_state)) return false;
-    } while (pd_state != PE_SNK_READY);
+        if (!dev->read(dev->addr, STUSB_PE_FSM, &pd_state, 1, dev->context)) return false;
+    } while (pd_state != STUSB_PE_SNK_READY);
 
     return true;
 }
 
-static bool
-  write_pdo(stusb4500_current_t current_ma, stusb4500_voltage_t voltage_mv, uint8_t pdo_num) {
+static bool write_pdo(
+  stusb4500_t const* dev,
+  stusb4500_current_t current_ma,
+  stusb4500_voltage_t voltage_mv,
+  uint8_t pdo_num) {
     if (pdo_num < 1 || pdo_num > 3) return false;
 
     // Format the sink PDO
     stusb4500_pdo_t pdo = TO_PDO_CURRENT(current_ma) | TO_PDO_VOLTAGE(voltage_mv);
 
     // Write the sink PDO
-    return i2c_master_write_u32(
-      STUSB_ADDR, DPM_SNK_PDO1 + sizeof(stusb4500_pdo_t) * (pdo_num - 1), pdo);
+    return dev->write(
+      dev->addr,
+      STUSB_DPM_SNK_PDO1 + sizeof(stusb4500_pdo_t) * (pdo_num - 1),
+      &pdo,
+      sizeof(stusb4500_pdo_t),
+      dev->context);
 }
 
-static bool
-  load_optimal_pdo(stusb4500_config_t* config, stusb4500_pdo_t* src_pdos, uint8_t num_pdos) {
+static bool load_optimal_pdo(
+  stusb4500_t const* dev,
+  stusb4500_config_t const* config,
+  stusb4500_pdo_t const* src_pdos,
+  uint8_t num_pdos) {
     bool found = false;
 
     stusb4500_current_t opt_pdo_current = config->min_current_ma;
@@ -132,7 +134,7 @@ static bool
 
     // Search for the optimal PDO, if any
     for (int i = 0; i < num_pdos; i++) {
-        stusb4500_pdo_t pdo = src_pdos[i];
+        stusb4500_pdo_t const pdo = src_pdos[i];
 
         // Extract PDO parameters
         stusb4500_current_t pdo_current = FROM_PDO_CURRENT(pdo);
@@ -140,8 +142,7 @@ static bool
         stusb4500_power_t pdo_power =
           (stusb4500_power_t)pdo_current * (stusb4500_power_t)pdo_voltage / 1000UL;
 
-#ifdef STUSB4500_ENABLE_PRINTF
-        printf(
+        STUSB4500_LOG(
           "Detected Source PDO: %2d.%03dV, %d.%03dA, %3d.%03dW\r\n",
           (int)(pdo_voltage / 1000UL),
           (int)(pdo_voltage % 1000UL),
@@ -149,7 +150,6 @@ static bool
           (int)(pdo_current % 1000UL),
           (int)((stusb4500_power_t)pdo_power / 1000UL),
           (int)((stusb4500_power_t)pdo_power % 1000UL));
-#endif // STUSB4500_ENABLE_PRINTF
 
         if (
           PDO_TYPE(pdo) != PDO_TYPE_FIXED || pdo_current < config->min_current_ma ||
@@ -163,8 +163,7 @@ static bool
         }
     }
 
-#ifdef STUSB4500_ENABLE_PRINTF
-    printf(
+    STUSB4500_LOG(
       "\r\nSelecting optimal PDO based on user parameters: %d.%03dV - %d.%03dV, >= "
       "%d.%03dA\r\n",
       (int)(config->min_voltage_mv / 1000UL),
@@ -174,7 +173,7 @@ static bool
       (int)(config->min_current_ma / 1000UL),
       (int)(config->min_current_ma % 1000UL));
     if (found) {
-        printf(
+        STUSB4500_LOG(
           "Selected PDO: %d.%03dV, %d.%03dA, %d.%03dW\r\n\r\n",
           (int)(opt_pdo_voltage / 1000UL),
           (int)(opt_pdo_voltage % 1000UL),
@@ -183,20 +182,18 @@ static bool
           (int)((stusb4500_power_t)opt_pdo_power / 1000UL),
           (int)((stusb4500_power_t)opt_pdo_power % 1000UL));
     } else {
-        printf("No suitable PDO found\r\n\r\n");
+        STUSB4500_LOG("No suitable PDO found\r\n\r\n");
         return false;
     }
-#else
-    if (!found) return false;
-#endif // STUSB4500_ENABLE_PRINTF
 
     // Push the new PDO
-    if (!write_pdo(opt_pdo_current, opt_pdo_voltage, 3)) return false;
+    if (!write_pdo(dev, opt_pdo_current, opt_pdo_voltage, 3)) return false;
 
     return true;
 }
 
-bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
+bool stusb4500_negotiate(
+  stusb4500_t const* dev, stusb4500_config_t const* config, bool on_interrupt) {
     uint8_t buffer[MAX_SRC_PDOS * sizeof(stusb4500_pdo_t)];
     uint16_t header;
     uint32_t start = 0;
@@ -204,15 +201,18 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
     if (!config) return false;
 
     // Sanity check to see if STUSB4500 is there
-    if (!is_present()) return false;
+    if (!is_present(dev)) return false;
 
     // Check that cable is attached
-    if (!i2c_master_read_u8(STUSB_ADDR, PORT_STATUS, buffer) || !(buffer[0] & ATTACH)) return false;
+    if (
+      !dev->read(dev->addr, STUSB_PORT_STATUS, buffer, 1, dev->context) ||
+      !(buffer[0] & STUSB_ATTACH))
+        return false;
 
-    // Force transmission of source capabilities if not responding to an ATTACH interrupt
+    // Force transmission of source capabilities if not responding to an STUSB_ATTACH interrupt
     if (!on_interrupt) {
-        if (!wait_until_ready_with_timeout(config)) return false;
-        if (!send_pd_message(PD_SOFT_RESET)) return false;
+        if (!wait_until_ready_with_timeout(dev, config)) return false;
+        if (!send_pd_message(dev, PD_SOFT_RESET)) return false;
     }
 
     if (config->get_ms) {
@@ -224,20 +224,23 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
         if (config->get_ms && (config->get_ms() - start > TIMEOUT_MS)) return false;
 
         // Read the port status to look for a source capabilities message
-        if (!i2c_master_read_u8(STUSB_ADDR, PRT_STATUS, buffer)) return false;
+        if (!dev->read(dev->addr, STUSB_PRT_STATUS, buffer, 1, dev->context)) return false;
 
         // Message has not arrived yet
-        if (!(buffer[0] & PRT_MESSAGE_RECEIVED)) continue;
+        if (!(buffer[0] & STUSB_PRT_MESSAGE_RECEIVED)) continue;
 
         // Read message header
-        if (!i2c_master_read_u16(STUSB_ADDR, RX_HEADER, &header)) return false;
+        if (!dev->read(dev->addr, STUSB_RX_HEADER, &header, sizeof(header), dev->context))
+            return false;
 
         // Not a data/source capabilities message, continue waiting
-        if (!HEADER_NUM_DATA_OBJECTS(header) || HEADER_MESSAGE_TYPE(header) != SRC_CAPABILITIES_MSG)
+        if (
+          !HEADER_NUM_DATA_OBJECTS(header) ||
+          HEADER_MESSAGE_TYPE(header) != STUSB_SRC_CAPABILITIES_MSG)
             continue;
 
         // Read number of received bytes
-        if (!i2c_master_read_u8(STUSB_ADDR, RX_BYTE_CNT, buffer)) return false;
+        if (!dev->read(dev->addr, STUSB_RX_BYTE_CNT, buffer, 1, dev->context)) return false;
 
         // Check for missing data
         if (buffer[0] != HEADER_NUM_DATA_OBJECTS(header) * sizeof(stusb4500_pdo_t)) return false;
@@ -249,28 +252,29 @@ bool stusb4500_negotiate(stusb4500_config_t* config, bool on_interrupt) {
     // WARNING: This must happen very soon after the previous code block is executed. The source
     // will send an accept message which partially overwrites the source capabilities message.
     // Use i2c clock >= 300 kHz
-    if (!i2c_master_read(
-          STUSB_ADDR,
-          RX_DATA_OBJ,
+    if (!dev->read(
+          dev->addr,
+          STUSB_RX_DATA_OBJ,
           buffer,
-          HEADER_NUM_DATA_OBJECTS(header) * sizeof(stusb4500_pdo_t)))
+          HEADER_NUM_DATA_OBJECTS(header) * sizeof(stusb4500_pdo_t),
+          dev->context))
         return false;
 
     // Wait for idle state before loading new PDO
-    if (!wait_until_ready_with_timeout(config)) return false;
+    if (!wait_until_ready_with_timeout(dev, config)) return false;
 
     // Find and load the optimal PDO, if any
-    if (!load_optimal_pdo(config, (stusb4500_pdo_t*)buffer, HEADER_NUM_DATA_OBJECTS(header)))
+    if (!load_optimal_pdo(dev, config, (stusb4500_pdo_t*)buffer, HEADER_NUM_DATA_OBJECTS(header)))
         return false;
 
     // Force a renegotiation
-    return send_pd_message(PD_SOFT_RESET);
+    return send_pd_message(dev, PD_SOFT_RESET);
 }
 
-bool stusb4500_set_gpio_state(stusb4500_gpio_state_t state) {
+bool stusb4500_set_gpio_state(stusb4500_t const* dev, stusb4500_gpio_state_t state) {
     // Sanity check to see if STUSB4500 is there
-    if (!is_present()) return false;
+    if (!is_present(dev)) return false;
 
     // Set GPIO state
-    return i2c_master_write_u8(STUSB_ADDR, GPIO3_SW_GPIO, state);
+    return dev->write(dev->addr, STUSB_GPIO3_SW_GPIO, &state, sizeof(state), dev->context);
 }

@@ -1,3 +1,0 @@
-[submodule "libi2c"]
-	path = libi2c
-	url = https://github.com/jefflongo/libi2c.git
