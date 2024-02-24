@@ -1,10 +1,7 @@
-#include "stusb4500_nvm.h"
+#include "stusb4500.h"
 
 #include <assert.h>
 #include <string.h>
-
-// I2C device ID
-#define STUSB_ADDR 0x28UL
 
 /* NVM Registers
 FTP_CUST_PASSWORD REG: address 0x95
@@ -125,177 +122,177 @@ RW_BUFFER: address 0x53
 
 #define MODIFY_REG(reg, data, mask) reg = (((reg) & ~(mask)) | ((data) & (mask)))
 
-static bool enter_write_mode(void) {
+static bool enter_write_mode(stusb4500_t const* dev) {
     uint8_t buffer;
 
     // Write FTP_CUST_PASSWORD to FTP_CUST_PASSWORD_REG
     buffer = FTP_CUST_PASSWORD;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CUST_PASSWORD_REG, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CUST_PASSWORD_REG, &buffer, 1, dev->context)) return false;
 
     // RW_BUFFER register must be NULL for Partial Erase feature
     buffer = 0x00;
-    if (!i2c_master_write_u8(STUSB_ADDR, RW_BUFFER, buffer)) return false;
+    if (!dev->write(dev->addr, RW_BUFFER, &buffer, 1, dev->context)) return false;
 
     /* Begin NVM power on sequence */
     // Reset internal controller
     buffer = 0x00;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Set PWR and RST_N bits in FTP_CTRL_0
     buffer = FTP_CUST_PWR | FTP_CUST_RST_N;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     /* End NVM power on sequence */
 
     /* Begin sectors erase */
     // Format and mask sectors to erase and write SER write opcode
     buffer = (((SECTOR0 | SECTOR1 | SECTOR2 | SECTOR3 | SECTOR4) << 3) & FTP_CUST_SER) |
              (WRITE_SER & FTP_CUST_OPCODE);
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_1, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_1, &buffer, 1, dev->context)) return false;
 
     // Load SER write command
     buffer = FTP_CUST_PWR | FTP_CUST_RST_N | FTP_CUST_REQ;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Wait for execution
     do {
-        if (!i2c_master_read_u8(STUSB_ADDR, FTP_CTRL_0, &buffer)) return false;
+        if (!dev->read(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     } while (buffer & FTP_CUST_REQ);
 
     // Write soft program opcode
     buffer = SOFT_PROG_SECTOR & FTP_CUST_OPCODE;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_1, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_1, &buffer, 1, dev->context)) return false;
 
     // Load soft program command
     buffer = FTP_CUST_PWR | FTP_CUST_RST_N | FTP_CUST_REQ;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Wait for execution
     do {
-        if (!i2c_master_read_u8(STUSB_ADDR, FTP_CTRL_0, &buffer)) return false;
+        if (!dev->read(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     } while (buffer & FTP_CUST_REQ);
 
     // Write erase sectors opcode
     buffer = ERASE_SECTOR & FTP_CUST_OPCODE;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_1, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_1, &buffer, 1, dev->context)) return false;
 
     // Load erase sectors command
     buffer = FTP_CUST_PWR | FTP_CUST_RST_N | FTP_CUST_REQ;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Wait for execution
     do {
-        if (!i2c_master_read_u8(STUSB_ADDR, FTP_CTRL_0, &buffer)) return false;
+        if (!dev->read(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     } while (buffer & FTP_CUST_REQ);
     /* End sectors erase */
 
     return true;
 }
 
-static bool enter_read_mode(void) {
+static bool enter_read_mode(stusb4500_t const* dev) {
     uint8_t buffer;
 
     // Write FTP_CUST_PASSWORD to FTP_CUST_PASSWORD_REG
     buffer = FTP_CUST_PASSWORD;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CUST_PASSWORD_REG, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CUST_PASSWORD_REG, &buffer, 1, dev->context)) return false;
 
     /* Begin NVM power on sequence */
     // Reset internal controller
     buffer = 0x00;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Set PWR and RST_N bits in FTP_CTRL_0
     buffer = FTP_CUST_PWR | FTP_CUST_RST_N;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     /* End NVM power on sequence */
 
     return true;
 }
 
-static bool read_sector(const uint8_t sector, uint8_t* sector_data) {
+static bool read_sector(stusb4500_t const* dev, uint8_t sector, uint8_t* sector_data) {
     if (!sector_data) return false;
 
     uint8_t buffer;
 
     // Set PWR and RST_N bits in FTP_CTRL_0
     buffer = FTP_CUST_PWR | FTP_CUST_RST_N;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Write sector read opcode
     buffer = (READ & FTP_CUST_OPCODE);
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_1, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_1, &buffer, 1, dev->context)) return false;
 
     // Select sector to read and load sector read command
     buffer = (sector & FTP_CUST_SECT) | FTP_CUST_PWR | FTP_CUST_RST_N | FTP_CUST_REQ;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Wait for execution
     do {
-        if (!i2c_master_read_u8(STUSB_ADDR, FTP_CTRL_0, &buffer)) return false;
+        if (!dev->read(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     } while (buffer & FTP_CUST_REQ);
 
     // Read sector data bytes from RW_BUFFER register
-    if (!i2c_master_read(STUSB_ADDR, RW_BUFFER, sector_data, 8)) return false;
+    if (!dev->read(dev->addr, RW_BUFFER, sector_data, 8, dev->context)) return false;
 
     // Reset internal controller
     buffer = 0x00;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     return true;
 }
 
-static bool write_sector(const uint8_t sector_num, const uint8_t* sector_data) {
+static bool write_sector(stusb4500_t const* dev, uint8_t sector_num, uint8_t const* sector_data) {
     if (!sector_data) return false;
 
     uint8_t buffer;
 
     // Write the 8 byte programming data to the RW_BUFFER register
-    if (!i2c_master_write(STUSB_ADDR, RW_BUFFER, sector_data, 8)) return false;
+    if (!dev->write(dev->addr, RW_BUFFER, sector_data, 8, dev->context)) return false;
 
     // Set PWR and RST_N bits in FTP_CTRL_0
     buffer = FTP_CUST_PWR | FTP_CUST_RST_N;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Write PL write opcode
     buffer = (WRITE_PL & FTP_CUST_OPCODE);
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_1, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_1, &buffer, 1, dev->context)) return false;
 
     // Load PL write command
     buffer = FTP_CUST_PWR | FTP_CUST_RST_N | FTP_CUST_REQ;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Wait for execution
     do {
-        if (!i2c_master_read_u8(STUSB_ADDR, FTP_CTRL_0, &buffer)) return false;
+        if (!dev->read(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     } while (buffer & FTP_CUST_REQ);
 
     // Write program sector opcode
     buffer = (PROG_SECTOR & FTP_CUST_OPCODE);
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_1, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_1, &buffer, 1, dev->context)) return false;
 
     // Load program sector command
     buffer = (sector_num & FTP_CUST_SECT) | FTP_CUST_PWR | FTP_CUST_RST_N | FTP_CUST_REQ;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
 
     // Wait for execution
     do {
-        if (!i2c_master_read_u8(STUSB_ADDR, FTP_CTRL_0, &buffer)) return false;
+        if (!dev->read(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     } while (buffer & FTP_CUST_REQ);
 
     return true;
 }
 
-static bool exit_rw_mode(void) {
+static bool exit_rw_mode(stusb4500_t const* dev) {
     uint8_t buffer;
 
     // Clear FTP_CTRL registers
     buffer = FTP_CUST_RST_N;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_0, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_0, &buffer, 1, dev->context)) return false;
     buffer = 0x00;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CTRL_1, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CTRL_1, &buffer, 1, dev->context)) return false;
 
     // Clear password
     buffer = 0x00;
-    if (!i2c_master_write_u8(STUSB_ADDR, FTP_CUST_PASSWORD_REG, buffer)) return false;
+    if (!dev->write(dev->addr, FTP_CUST_PASSWORD_REG, &buffer, 1, dev->context)) return false;
 
     return true;
 }
@@ -354,46 +351,46 @@ static void apply_config(uint8_t* nvm, stusb4500_nvm_config_t const* config) {
       GPIO_CFG_MSK);
 }
 
-bool stusb4500_nvm_read(uint8_t* nvm) {
+bool stusb4500_nvm_read(stusb4500_t const* dev, uint8_t* nvm) {
     if (!nvm) return false;
 
-    if (!enter_read_mode()) return false;
+    if (!enter_read_mode(dev)) return false;
 
     uint8_t* p_nvm = nvm;
     for (uint8_t sector = 0; sector < NUM_SECTORS; sector++) {
-        if (!read_sector(sector, p_nvm)) return false;
+        if (!read_sector(dev, sector, p_nvm)) return false;
         p_nvm += SECTOR_SIZE;
     }
 
-    if (!exit_rw_mode()) return false;
+    if (!exit_rw_mode(dev)) return false;
 
     return true;
 }
 
-bool stusb4500_nvm_flash(stusb4500_nvm_config_t const* config) {
+bool stusb4500_nvm_flash(stusb4500_t const* dev, stusb4500_nvm_config_t const* config) {
     uint8_t nvm[NUM_SECTORS][SECTOR_SIZE];
     uint8_t nvm_modified[NUM_SECTORS][SECTOR_SIZE];
 
     if (!config) return false;
 
-    if (!stusb4500_nvm_read((uint8_t*)nvm)) return false;
+    if (!stusb4500_nvm_read(dev, (uint8_t*)nvm)) return false;
 
     memcpy(nvm_modified, nvm, NVM_SIZE);
     apply_config((uint8_t*)nvm_modified, config);
 
-    if (memcmp(nvm_modified, nvm, NVM_SIZE) == 0) return exit_rw_mode();
+    if (memcmp(nvm_modified, nvm, NVM_SIZE) == 0) return exit_rw_mode(dev);
 
-    if (!enter_write_mode()) return false;
+    if (!enter_write_mode(dev)) return false;
 
     uint8_t* p_nvm = (uint8_t*)nvm_modified;
     for (uint8_t sector = 0; sector < NUM_SECTORS; sector++) {
-        if (!write_sector(sector, p_nvm)) return false;
+        if (!write_sector(dev, sector, p_nvm)) return false;
         p_nvm += SECTOR_SIZE;
     }
 
-    if (!exit_rw_mode()) return false;
+    if (!exit_rw_mode(dev)) return false;
 
-    if (!stusb4500_nvm_read((uint8_t*)nvm)) return false;
+    if (!stusb4500_nvm_read(dev, (uint8_t*)nvm)) return false;
 
     return (memcmp(nvm, nvm_modified, NVM_SIZE) == 0);
 }

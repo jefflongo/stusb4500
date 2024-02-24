@@ -1,15 +1,8 @@
 # STUSB4500
-STUSB4500 is a USB-C PD controller which supports a 5V fixed power profile, and two customizeable power profiles. This library allows for flashing the non-volatile memory of the STUSB4500 to change the default power profiles on boot as well as the capability to dynamically program the high priority power profile with the optimal power profile that the currently plugged in PD charger can supply. Optimal is defined as the highest wattage profile that satisfies a user-defined set of constraints. This code assumes a little endian architecture.
+STUSB4500 is a USB-C PD controller which supports a 5V fixed power profile, and two customizable power profiles. This library allows for flashing the non-volatile memory of the STUSB4500 to change the default power profiles on boot as well as the capability to dynamically program the high priority power profile with the optimal power profile that the currently plugged in PD charger can supply. Optimal is defined as the highest wattage profile that satisfies a user-defined set of constraints. This code assumes a little endian architecture.
 
 ## Porting
-
-This library can easily be ported to a custom platform. The only requirements are a function to get the current tick in ms (if using timeouts, recommended) and an i2c implementation. Add an implementation to the [platform-independent i2c wrapper library](https://github.com/jefflongo/libi2c). Please check the wrapper library README for details about providing the implementation. `i2c_master_init` should be called before using any of the stusb4500 library functions. Note that the library currently only supports the default slave address, and that an i2c speed should be at least 300kHz for dynamic power profiles. If there are additional requirements for porting the code to your own platform, please submit an issue so that the compatability can be further improved in the future.
-
-To test if the i2c implementation is successful, the following code snippet should return true with the STUSB4500 connected to the i2c bus.
-```c
-uint8_t res;
-i2c_master_read_u8(0x28U, 0x2FU, &res);
-```
+This library can easily be ported to a custom platform. The only requirements are a function to get the current tick in ms (if using timeouts, recommended) and an i2c implementation. Simply implement the `read` and `write` functions of the device handle with your i2c implementation. If there are additional requirements for porting the code to your own platform, please submit an issue so that compatibility can be improved. A CMake library is included for convenience. It is strongly recommended to use i2c in fast mode when using dynamic power profiles.
 
 ## Usage
 
@@ -37,4 +30,4 @@ The STUSB4500's non-volatile memory (NVM) determines what power profiles are con
 | POWER_ONLY_ABOVE_5V | Only output if negotiation above 5V     |
 | GPIO_CFG            | Configures the behavior of the GPIO pin |
 
-To program the NVM, include `stusb4500_nvm.h` and run `stusb4500_nvm_flash` with your config. `stusb4500_nvm_flash` returns true after writing and validating the flash.
+To program the NVM, include `stusb4500.h` and run `stusb4500_nvm_flash` with your config. `stusb4500_nvm_flash` returns true after writing and validating the flash.
